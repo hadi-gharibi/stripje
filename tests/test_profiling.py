@@ -310,7 +310,7 @@ class TestPipelineProfiler:
         assert profiler.profile_runs == 10
         assert profiler.cache_invalidation is True
         assert profiler.verbose is False
-        assert profiler.results == []
+        assert profiler.results == {}
 
     def test_profiler_initialization_custom(self):
         """Test PipelineProfiler with custom parameters."""
