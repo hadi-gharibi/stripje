@@ -154,7 +154,9 @@ class PipelineProfiler:
             del dummy_array
             gc.collect()
 
-    def _time_operation(self, operation: Callable[..., Any], *args: Any, **kwargs: Any) -> list[float]:
+    def _time_operation(
+        self, operation: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> list[float]:
         """
         Time an operation multiple times with cache invalidation.
 
@@ -403,7 +405,9 @@ class PipelineProfiler:
                     if i < len(pipeline.steps) - 1:
                         if hasattr(step, "transform"):
                             # Create a closure that captures current_X
-                            def make_transform_func(step_obj: Any, data: Any) -> Callable[[], Any]:
+                            def make_transform_func(
+                                step_obj: Any, data: Any
+                            ) -> Callable[[], Any]:
                                 return lambda: step_obj.transform(data)
 
                             # Time the transform operation
@@ -442,7 +446,9 @@ class PipelineProfiler:
                         # Final step - use the requested operation
                         if operation == "predict" and hasattr(step, "predict"):
 
-                            def make_predict_func(step_obj: Any, data: Any) -> Callable[[], Any]:
+                            def make_predict_func(
+                                step_obj: Any, data: Any
+                            ) -> Callable[[], Any]:
                                 return lambda: step_obj.predict(data)
 
                             times = self._time_operation(
@@ -450,7 +456,9 @@ class PipelineProfiler:
                             )
                         elif operation == "transform" and hasattr(step, "transform"):
 
-                            def make_transform_func(step_obj: Any, data: Any) -> Callable[[], Any]:
+                            def make_transform_func(
+                                step_obj: Any, data: Any
+                            ) -> Callable[[], Any]:
                                 return lambda: step_obj.transform(data)
 
                             times = self._time_operation(
@@ -640,7 +648,9 @@ class PipelineProfiler:
                         # Time the operation directly on the fitted transformer
                         if operation == "transform":
 
-                            def make_transform_func(trans_obj: Any, data: Any) -> Callable[[], Any]:
+                            def make_transform_func(
+                                trans_obj: Any, data: Any
+                            ) -> Callable[[], Any]:
                                 return lambda: trans_obj.transform(data)
 
                             times = self._time_operation(
@@ -648,7 +658,9 @@ class PipelineProfiler:
                             )
                         elif operation == "predict":
 
-                            def make_predict_func(trans_obj: Any, data: Any) -> Callable[[], Any]:
+                            def make_predict_func(
+                                trans_obj: Any, data: Any
+                            ) -> Callable[[], Any]:
                                 return lambda: trans_obj.predict(data)
 
                             times = self._time_operation(
@@ -658,7 +670,9 @@ class PipelineProfiler:
                             # For fit operations, create a copy
                             transformer_copy = copy.deepcopy(transformer)
 
-                            def make_fit_func(trans_obj: Any, data: Any, target: Any) -> Callable[[], Any]:
+                            def make_fit_func(
+                                trans_obj: Any, data: Any, target: Any
+                            ) -> Callable[[], Any]:
                                 return lambda: trans_obj.fit(data, target)
 
                             times = self._time_operation(
@@ -867,7 +881,9 @@ class PipelineProfiler:
                 # Create operation function for fitted pipeline
                 if operation == "fit":
 
-                    def op_func(x_sample: Any = X_sample, y_sample: Any = y_sample) -> Any:
+                    def op_func(
+                        x_sample: Any = X_sample, y_sample: Any = y_sample
+                    ) -> Any:
                         temp_pipeline = copy.deepcopy(pipeline_copy)
                         return temp_pipeline.fit(x_sample, y_sample)
                 elif operation == "transform":
@@ -880,7 +896,9 @@ class PipelineProfiler:
                         return pipeline_copy.predict(x_sample)
                 elif operation == "fit_transform":
 
-                    def op_func(x_sample: Any = X_sample, y_sample: Any = y_sample) -> Any:
+                    def op_func(
+                        x_sample: Any = X_sample, y_sample: Any = y_sample
+                    ) -> Any:
                         temp_pipeline = copy.deepcopy(pipeline_copy)
                         return temp_pipeline.fit_transform(x_sample, y_sample)
                 else:
@@ -1043,7 +1061,11 @@ class PipelineProfiler:
         return pd.DataFrame(rows)
 
     def _add_result_to_rows(
-        self, result: ProfileResult, rows: list[dict[str, Any]], operation: str, parent_path: str
+        self,
+        result: ProfileResult,
+        rows: list[dict[str, Any]],
+        operation: str,
+        parent_path: str,
     ) -> None:
         """Recursively add results to rows list."""
         current_path = (

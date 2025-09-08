@@ -6,7 +6,7 @@ functions for single-row inference, avoiding the overhead of numpy operations
 on single rows.
 """
 
-from typing import Any, Callable, Union
+from typing import Any, Callable
 
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline

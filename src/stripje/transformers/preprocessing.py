@@ -209,7 +209,7 @@ def handle_quantile_transformer(step: QuantileTransformer) -> Callable[[Any], An
         for i, val in enumerate(x):
             # Find quantile for this value using searchsorted (like sklearn)
             quantile_vals = quantiles[:, i]
-            
+
             # Use binary search to find position
             pos = 0
             for j in range(len(quantile_vals)):
@@ -218,7 +218,7 @@ def handle_quantile_transformer(step: QuantileTransformer) -> Callable[[Any], An
                     break
             else:
                 pos = len(quantile_vals)
-            
+
             if pos == 0:
                 quantile = 0.0
             elif pos == len(quantile_vals):
@@ -240,10 +240,10 @@ def handle_quantile_transformer(step: QuantileTransformer) -> Callable[[Any], An
                 # Clip quantiles to match sklearn behavior (uses 1e-7 clipping)
                 # This matches sklearn's internal quantile clipping
                 clipped_quantile = max(1e-7, min(1 - 1e-7, quantile))
-                
+
                 # Use Beasley-Springer-Moro inverse normal CDF approximation
                 from math import log, sqrt
-                
+
                 # Beasley-Springer-Moro algorithm
                 if clipped_quantile < 0.5:
                     # Lower tail
@@ -253,9 +253,9 @@ def handle_quantile_transformer(step: QuantileTransformer) -> Callable[[Any], An
                     # Upper tail
                     sign = 1
                     r = 1.0 - clipped_quantile
-                
+
                 t = sqrt(-2.0 * log(r))
-                
+
                 # Coefficients for the approximation
                 c0 = 2.515517
                 c1 = 0.802853
@@ -263,9 +263,11 @@ def handle_quantile_transformer(step: QuantileTransformer) -> Callable[[Any], An
                 d1 = 1.432788
                 d2 = 0.189269
                 d3 = 0.001308
-                
-                ppf = t - (c0 + c1*t + c2*t*t) / (1.0 + d1*t + d2*t*t + d3*t*t*t)
-                
+
+                ppf = t - (c0 + c1 * t + c2 * t * t) / (
+                    1.0 + d1 * t + d2 * t * t + d3 * t * t * t
+                )
+
                 result.append(float(sign * ppf))
         return result
 
@@ -471,15 +473,28 @@ def handle_function_transformer(
         # Convert back to list format and return the first (and only) row
         if hasattr(result, "tolist"):
             result_list = result.tolist()[0]
-            return [float(val) if isinstance(val, (int, float, np.number)) else val for val in result_list]
+            return [
+                float(val) if isinstance(val, (int, float, np.number)) else val
+                for val in result_list
+            ]
         elif isinstance(result, (list, tuple)):
             result_list = list(result[0])
-            return [float(val) if isinstance(val, (int, float, np.number)) else val for val in result_list]
+            return [
+                float(val) if isinstance(val, (int, float, np.number)) else val
+                for val in result_list
+            ]
         else:
             if isinstance(result, (list, tuple)):
-                return [float(val) if isinstance(val, (int, float, np.number)) else val for val in result]
+                return [
+                    float(val) if isinstance(val, (int, float, np.number)) else val
+                    for val in result
+                ]
             else:
-                return [float(result) if isinstance(result, (int, float, np.number)) else result]
+                return [
+                    float(result)
+                    if isinstance(result, (int, float, np.number))
+                    else result
+                ]
 
     return transform_one
 
