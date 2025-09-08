@@ -10,27 +10,29 @@ import numpy as np
 T = TypeVar("T")
 
 # Registry for step handlers
-STEP_HANDLERS: dict[type, Callable[[Any], Callable]] = {}
+STEP_HANDLERS: dict[type, Callable[[Any], Callable[..., Any]]] = {}
 
 
 def register_step_handler(
     step_type: type[T],
-) -> Callable[[Callable[[T], Callable]], Callable[[T], Callable]]:
+) -> Callable[[Callable[[T], Callable[..., Any]]], Callable[[T], Callable[..., Any]]]:
     """Decorator to register a handler for a specific step type."""
 
-    def decorator(fn: Callable[[T], Callable]) -> Callable[[T], Callable]:
+    def decorator(
+        fn: Callable[[T], Callable[..., Any]],
+    ) -> Callable[[T], Callable[..., Any]]:
         STEP_HANDLERS[step_type] = fn
         return fn
 
     return decorator
 
 
-def get_handler(step_type: type) -> Optional[Callable]:
+def get_handler(step_type: type) -> Optional[Callable[..., Any]]:
     """Get handler for a specific step type."""
     return STEP_HANDLERS.get(step_type)
 
 
-def create_fallback_handler(step: Any) -> Callable:
+def create_fallback_handler(step: Any) -> Callable[..., Any]:
     """
     Create a fallback handler that uses the original step for unsupported transformers.
 

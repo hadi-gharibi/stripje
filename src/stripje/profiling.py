@@ -794,8 +794,8 @@ class PipelineProfiler:
     def profile_single_row(
         self,
         pipeline: Pipeline | ColumnTransformer | BaseEstimator,
-        X_samples: list | np.ndarray | pd.DataFrame,
-        y_samples: list | np.ndarray | pd.Series | None = None,
+        X_samples: list[Any] | np.ndarray | pd.DataFrame,
+        y_samples: list[Any] | np.ndarray | pd.Series | None = None,
         operations: str | list[str] = "transform",
     ) -> dict[str, ProfileResult]:
         """
@@ -888,11 +888,11 @@ class PipelineProfiler:
                         return temp_pipeline.fit(x_sample, y_sample)
                 elif operation == "transform":
 
-                    def op_func(x_sample: Any = X_sample, y_sample: Any = None) -> Any:
+                    def op_func(x_sample: Any = X_sample, y_sample: Any = None) -> Any:  # noqa: ARG001
                         return pipeline_copy.transform(x_sample)
                 elif operation == "predict":
 
-                    def op_func(x_sample: Any = X_sample, y_sample: Any = None) -> Any:
+                    def op_func(x_sample: Any = X_sample, y_sample: Any = None) -> Any:  # noqa: ARG001
                         return pipeline_copy.predict(x_sample)
                 elif operation == "fit_transform":
 
@@ -1175,7 +1175,7 @@ class CompiledPipelineProfiler:
             gc.collect()
 
     def _time_compiled_operation(
-        self, compiled_fn: Callable, data_samples: list[Any]
+        self, compiled_fn: Callable[..., Any], data_samples: list[Any]
     ) -> list[float]:
         """
         Time a compiled function across multiple data samples.
@@ -1235,7 +1235,7 @@ class CompiledPipelineProfiler:
         return times
 
     def _prepare_data_samples(
-        self, X: np.ndarray | pd.DataFrame | list, num_samples: int = 20
+        self, X: np.ndarray | pd.DataFrame | list[Any], num_samples: int = 20
     ) -> list[Any]:
         """
         Prepare individual data samples for single-row profiling.
@@ -1282,8 +1282,8 @@ class CompiledPipelineProfiler:
     def profile_compiled_vs_original(
         self,
         pipeline: Pipeline | ColumnTransformer,
-        X: np.ndarray | pd.DataFrame | list,
-        y: np.ndarray | pd.Series | list | None = None,
+        X: np.ndarray | pd.DataFrame | list[Any],
+        y: np.ndarray | pd.Series | list[Any] | None = None,
         operation: str = "predict",
         num_samples: int = 20,
     ) -> CompiledProfileResult:
@@ -1407,7 +1407,10 @@ class CompiledPipelineProfiler:
         return result
 
     def profile_compiled_only(
-        self, compiled_fn: Callable, data_samples: list[Any], operation: str = "predict"
+        self,
+        compiled_fn: Callable[..., Any],
+        data_samples: list[Any],
+        operation: str = "predict",
     ) -> ProfileResult:
         """
         Profile only a compiled function (when you don't need comparison).
@@ -1516,7 +1519,7 @@ class CompiledPipelineProfiler:
 
 def profile_pipeline_compilation(
     pipeline: Pipeline | ColumnTransformer,
-    X: np.ndarray | pd.DataFrame | list,
+    X: np.ndarray | pd.DataFrame | list[Any],
     y: np.ndarray | pd.Series | None = None,
     operation: str = "predict",
     num_samples: int = 20,
