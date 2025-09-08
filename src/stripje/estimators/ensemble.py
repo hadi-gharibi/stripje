@@ -78,7 +78,7 @@ def handle_random_forest_regressor(
                     node = tree.tree_.children_right[node]
 
             # Get prediction from leaf
-            predictions.append(tree.tree_.value[node][0][0])
+            predictions.append(float(tree.tree_.value[node][0][0]))
 
         return sum(predictions) / len(predictions)
 

@@ -140,9 +140,9 @@ class PipelineProfiler:
         self.profile_runs = profile_runs
         self.cache_invalidation = cache_invalidation
         self.verbose = verbose
-        self.results = []
+        self.results: dict[str, ProfileResult] = {}
 
-    def _invalidate_caches(self):
+    def _invalidate_caches(self) -> None:
         """Invalidate CPU caches and trigger garbage collection."""
         if self.cache_invalidation:
             # Force garbage collection
@@ -154,7 +154,7 @@ class PipelineProfiler:
             del dummy_array
             gc.collect()
 
-    def _time_operation(self, operation: Callable, *args, **kwargs) -> list[float]:
+    def _time_operation(self, operation: Callable[..., Any], *args: Any, **kwargs: Any) -> list[float]:
         """
         Time an operation multiple times with cache invalidation.
 
@@ -214,7 +214,7 @@ class PipelineProfiler:
         elif isinstance(step, ColumnTransformer):
             return "ColumnTransformer"
         elif hasattr(step, "__class__"):
-            return step.__class__.__name__
+            return str(step.__class__.__name__)
         else:
             return str(type(step).__name__)
 
@@ -294,19 +294,19 @@ class PipelineProfiler:
         # Determine the operation to perform
         if operation == "fit":
 
-            def op_func():
+            def op_func() -> Any:
                 return step.fit(X, y)
         elif operation == "transform":
 
-            def op_func():
+            def op_func() -> Any:
                 return step.transform(X)
         elif operation == "predict":
 
-            def op_func():
+            def op_func() -> Any:
                 return step.predict(X)
         elif operation == "fit_transform":
 
-            def op_func():
+            def op_func() -> Any:
                 return step.fit_transform(X, y)
         else:
             raise ValueError(f"Unsupported operation: {operation}")
@@ -403,7 +403,7 @@ class PipelineProfiler:
                     if i < len(pipeline.steps) - 1:
                         if hasattr(step, "transform"):
                             # Create a closure that captures current_X
-                            def make_transform_func(step_obj, data):
+                            def make_transform_func(step_obj: Any, data: Any) -> Callable[[], Any]:
                                 return lambda: step_obj.transform(data)
 
                             # Time the transform operation
@@ -442,7 +442,7 @@ class PipelineProfiler:
                         # Final step - use the requested operation
                         if operation == "predict" and hasattr(step, "predict"):
 
-                            def make_predict_func(step_obj, data):
+                            def make_predict_func(step_obj: Any, data: Any) -> Callable[[], Any]:
                                 return lambda: step_obj.predict(data)
 
                             times = self._time_operation(
@@ -450,7 +450,7 @@ class PipelineProfiler:
                             )
                         elif operation == "transform" and hasattr(step, "transform"):
 
-                            def make_transform_func(step_obj, data):
+                            def make_transform_func(step_obj: Any, data: Any) -> Callable[[], Any]:
                                 return lambda: step_obj.transform(data)
 
                             times = self._time_operation(
@@ -640,7 +640,7 @@ class PipelineProfiler:
                         # Time the operation directly on the fitted transformer
                         if operation == "transform":
 
-                            def make_transform_func(trans_obj, data):
+                            def make_transform_func(trans_obj: Any, data: Any) -> Callable[[], Any]:
                                 return lambda: trans_obj.transform(data)
 
                             times = self._time_operation(
@@ -648,7 +648,7 @@ class PipelineProfiler:
                             )
                         elif operation == "predict":
 
-                            def make_predict_func(trans_obj, data):
+                            def make_predict_func(trans_obj: Any, data: Any) -> Callable[[], Any]:
                                 return lambda: trans_obj.predict(data)
 
                             times = self._time_operation(
@@ -658,7 +658,7 @@ class PipelineProfiler:
                             # For fit operations, create a copy
                             transformer_copy = copy.deepcopy(transformer)
 
-                            def make_fit_func(trans_obj, data, target):
+                            def make_fit_func(trans_obj: Any, data: Any, target: Any) -> Callable[[], Any]:
                                 return lambda: trans_obj.fit(data, target)
 
                             times = self._time_operation(
@@ -867,20 +867,20 @@ class PipelineProfiler:
                 # Create operation function for fitted pipeline
                 if operation == "fit":
 
-                    def op_func(x_sample=X_sample, y_sample=y_sample):
+                    def op_func(x_sample: Any = X_sample, y_sample: Any = y_sample) -> Any:
                         temp_pipeline = copy.deepcopy(pipeline_copy)
                         return temp_pipeline.fit(x_sample, y_sample)
                 elif operation == "transform":
 
-                    def op_func(x_sample=X_sample):
+                    def op_func(x_sample: Any = X_sample, y_sample: Any = None) -> Any:
                         return pipeline_copy.transform(x_sample)
                 elif operation == "predict":
 
-                    def op_func(x_sample=X_sample):
+                    def op_func(x_sample: Any = X_sample, y_sample: Any = None) -> Any:
                         return pipeline_copy.predict(x_sample)
                 elif operation == "fit_transform":
 
-                    def op_func(x_sample=X_sample, y_sample=y_sample):
+                    def op_func(x_sample: Any = X_sample, y_sample: Any = y_sample) -> Any:
                         temp_pipeline = copy.deepcopy(pipeline_copy)
                         return temp_pipeline.fit_transform(x_sample, y_sample)
                 else:
@@ -942,7 +942,7 @@ class PipelineProfiler:
             print(f"{'=' * 60}")
             self._print_result(result, 0)
 
-    def _print_result(self, result: ProfileResult, indent: int = 0):
+    def _print_result(self, result: ProfileResult, indent: int = 0) -> None:
         """Print a single ProfileResult with hierarchy."""
         indent_str = "  " * indent
 
@@ -989,7 +989,7 @@ class PipelineProfiler:
 
     def _print_child_result(
         self, result: ProfileResult, indent: int, custom_indent: str
-    ):
+    ) -> None:
         """Print a child result with custom indentation for tree structure."""
         # Handle NaN values
         if np.isnan(result.mean_time):
@@ -1035,7 +1035,7 @@ class PipelineProfiler:
         if results is None:
             results = self.results
 
-        rows = []
+        rows: list[dict[str, Any]] = []
 
         for operation, result in results.items():
             self._add_result_to_rows(result, rows, operation, "")
@@ -1043,8 +1043,8 @@ class PipelineProfiler:
         return pd.DataFrame(rows)
 
     def _add_result_to_rows(
-        self, result: ProfileResult, rows: list[dict], operation: str, parent_path: str
-    ):
+        self, result: ProfileResult, rows: list[dict[str, Any]], operation: str, parent_path: str
+    ) -> None:
         """Recursively add results to rows list."""
         current_path = (
             f"{parent_path}.{result.step_name}" if parent_path else result.step_name
@@ -1142,7 +1142,7 @@ class CompiledPipelineProfiler:
             verbose=verbose,
         )
 
-    def _invalidate_caches(self):
+    def _invalidate_caches(self) -> None:
         """Invalidate CPU caches and trigger garbage collection."""
         if self.cache_invalidation:
             gc.collect()
@@ -1261,7 +1261,7 @@ class CompiledPipelineProfiler:
         self,
         pipeline: Pipeline | ColumnTransformer,
         X: np.ndarray | pd.DataFrame | list,
-        y: np.ndarray | pd.Series | None = None,
+        y: np.ndarray | pd.Series | list | None = None,
         operation: str = "predict",
         num_samples: int = 20,
     ) -> CompiledProfileResult:
@@ -1321,7 +1321,7 @@ class CompiledPipelineProfiler:
         if y is not None:
             if isinstance(y, (np.ndarray, pd.Series)):
                 y_samples = [y[i : i + 1] for i in range(min(num_samples, len(y)))]
-            else:
+            else:  # For list or other sequence types
                 y_samples = y[:num_samples]
 
         original_results = self.base_profiler.profile_single_row(
@@ -1435,7 +1435,7 @@ class CompiledPipelineProfiler:
 
         return result
 
-    def print_comparison_report(self, result: CompiledProfileResult):
+    def print_comparison_report(self, result: CompiledProfileResult) -> None:
         """
         Print a detailed comparison report for compiled vs original pipeline.
 

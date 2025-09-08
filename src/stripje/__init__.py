@@ -11,6 +11,9 @@ from .profiling import (
     profile_pipeline_compilation,
 )
 
+# Import all handler modules to register them
+from . import estimators, transformers
+
 __all__ = [
     "__version__",
     # Core compilation

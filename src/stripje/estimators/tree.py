@@ -51,7 +51,7 @@ def handle_decision_tree_regressor(
                 node = tree.children_right[node]
 
         # Get prediction from leaf
-        return tree.value[node][0][0]
+        return float(tree.value[node][0][0])
 
     return predict_one
 

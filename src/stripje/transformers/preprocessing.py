@@ -199,77 +199,81 @@ def handle_label_binarizer(
 
 
 @register_step_handler(QuantileTransformer)
-def handle_quantile_transformer(step):
+def handle_quantile_transformer(step: QuantileTransformer) -> Callable[[Any], Any]:
     """Handle QuantileTransformer for single-row input."""
     quantiles = step.quantiles_
     output_distribution = step.output_distribution
 
-    def transform_one(x):
+    def transform_one(x: Any) -> Any:
         result = []
         for i, val in enumerate(x):
-            # Find quantile for this value
+            # Find quantile for this value using searchsorted (like sklearn)
             quantile_vals = quantiles[:, i]
-            # Simple linear interpolation
-            if val <= quantile_vals[0]:
+            
+            # Use binary search to find position
+            pos = 0
+            for j in range(len(quantile_vals)):
+                if val <= quantile_vals[j]:
+                    pos = j
+                    break
+            else:
+                pos = len(quantile_vals)
+            
+            if pos == 0:
                 quantile = 0.0
-            elif val >= quantile_vals[-1]:
+            elif pos == len(quantile_vals):
                 quantile = 1.0
             else:
-                # Linear interpolation between quantiles
-                for j in range(len(quantile_vals) - 1):
-                    if quantile_vals[j] <= val <= quantile_vals[j + 1]:
-                        ratio = (val - quantile_vals[j]) / (
-                            quantile_vals[j + 1] - quantile_vals[j]
-                        )
-                        quantile = (j + ratio) / (len(quantile_vals) - 1)
-                        break
+                # Linear interpolation
+                left_val = quantile_vals[pos - 1]
+                right_val = quantile_vals[pos]
+                if right_val == left_val:
+                    quantile = (pos - 1) / (len(quantile_vals) - 1)
+                else:
+                    ratio = (val - left_val) / (right_val - left_val)
+                    quantile = (pos - 1 + ratio) / (len(quantile_vals) - 1)
 
             # Transform based on output distribution
             if output_distribution == "uniform":
                 result.append(quantile)
             elif output_distribution == "normal":
-                # Inverse normal CDF approximation
-                if quantile <= 0:
-                    result.append(-6.0)
-                elif quantile >= 1:
-                    result.append(6.0)
+                # Clip quantiles to match sklearn behavior (uses 1e-7 clipping)
+                # This matches sklearn's internal quantile clipping
+                clipped_quantile = max(1e-7, min(1 - 1e-7, quantile))
+                
+                # Use Beasley-Springer-Moro inverse normal CDF approximation
+                from math import log, sqrt
+                
+                # Beasley-Springer-Moro algorithm
+                if clipped_quantile < 0.5:
+                    # Lower tail
+                    sign = -1
+                    r = clipped_quantile
                 else:
-                    # Simple approximation of inverse normal CDF
-                    from math import log, sqrt
-
-                    if quantile < 0.5:
-                        t = sqrt(-2 * log(quantile))
-                        result.append(
-                            -(
-                                t
-                                - (2.515517 + 0.802853 * t + 0.010328 * t * t)
-                                / (
-                                    1
-                                    + 1.432788 * t
-                                    + 0.189269 * t * t
-                                    + 0.001308 * t * t * t
-                                )
-                            )
-                        )
-                    else:
-                        t = sqrt(-2 * log(1 - quantile))
-                        result.append(
-                            t
-                            - (2.515517 + 0.802853 * t + 0.010328 * t * t)
-                            / (
-                                1
-                                + 1.432788 * t
-                                + 0.189269 * t * t
-                                + 0.001308 * t * t * t
-                            )
-                        )
+                    # Upper tail
+                    sign = 1
+                    r = 1.0 - clipped_quantile
+                
+                t = sqrt(-2.0 * log(r))
+                
+                # Coefficients for the approximation
+                c0 = 2.515517
+                c1 = 0.802853
+                c2 = 0.010328
+                d1 = 1.432788
+                d2 = 0.189269
+                d3 = 0.001308
+                
+                ppf = t - (c0 + c1*t + c2*t*t) / (1.0 + d1*t + d2*t*t + d3*t*t*t)
+                
+                result.append(float(sign * ppf))
         return result
 
     return transform_one
 
 
 @register_step_handler(PowerTransformer)
-def handle_power_transformer(step):
+def handle_power_transformer(step: PowerTransformer) -> Callable[[Any], Any]:
     """Handle PowerTransformer for single-row input."""
     lambdas = step.lambdas_
     method = step.method
@@ -283,7 +287,7 @@ def handle_power_transformer(step):
         scaler_mean = None
         scaler_scale = None
 
-    def transform_one(x):
+    def transform_one(x: Any) -> Any:
         result = []
         for i, val in enumerate(x):
             lmbda = lambdas[i]
@@ -343,8 +347,8 @@ def handle_kbins_discretizer(
             for i, val in enumerate(x):
                 edges = bin_edges[i]
                 # Find which bin this value falls into
-                bin_idx = np.digitize(val, edges) - 1
-                bin_idx = max(0, min(bin_idx, n_bins[i] - 1))
+                bin_idx_raw = np.digitize(val, edges) - 1
+                bin_idx = max(0, min(bin_idx_raw.item(), n_bins[i] - 1))
 
                 # Create one-hot encoding
                 onehot = [0.0] * n_bins[i]
@@ -355,8 +359,8 @@ def handle_kbins_discretizer(
             result = []
             for i, val in enumerate(x):
                 edges = bin_edges[i]
-                bin_idx = np.digitize(val, edges) - 1
-                bin_idx = max(0, min(bin_idx, n_bins[i] - 1))
+                bin_idx_raw = np.digitize(val, edges) - 1
+                bin_idx = max(0, min(bin_idx_raw.item(), n_bins[i] - 1))
                 result.append(float(bin_idx))
             return result
 
@@ -383,7 +387,7 @@ def handle_kbins_discretizer(
 
 
 @register_step_handler(TargetEncoder)
-def handle_target_encoder(step):
+def handle_target_encoder(step: TargetEncoder) -> Callable[[Any], Any]:
     """Handle TargetEncoder for single-row input."""
     categories = step.categories_
     encodings = step.encodings_
@@ -401,7 +405,7 @@ def handle_target_encoder(step):
             float(target_mean) if hasattr(target_mean, "__len__") else target_mean
         )
 
-    def transform_one(x):
+    def transform_one(x: Any) -> Any:
         result = []
 
         if target_type == "binary":
@@ -466,11 +470,16 @@ def handle_function_transformer(
         result = func(x_array, **kw_args)
         # Convert back to list format and return the first (and only) row
         if hasattr(result, "tolist"):
-            return result.tolist()[0]
+            result_list = result.tolist()[0]
+            return [float(val) if isinstance(val, (int, float, np.number)) else val for val in result_list]
         elif isinstance(result, (list, tuple)):
-            return list(result[0])
+            result_list = list(result[0])
+            return [float(val) if isinstance(val, (int, float, np.number)) else val for val in result_list]
         else:
-            return [result] if not isinstance(result, (list, tuple)) else list(result)
+            if isinstance(result, (list, tuple)):
+                return [float(val) if isinstance(val, (int, float, np.number)) else val for val in result]
+            else:
+                return [float(result) if isinstance(result, (int, float, np.number)) else result]
 
     return transform_one
 

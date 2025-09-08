@@ -6,6 +6,8 @@ functions for single-row inference, avoiding the overhead of numpy operations
 on single rows.
 """
 
+from typing import Any, Callable, Union
+
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
@@ -23,7 +25,7 @@ from .registry import (
 
 
 @register_step_handler(Pipeline)
-def handle_nested_pipeline(pipeline_step):
+def handle_nested_pipeline(pipeline_step: Pipeline) -> Callable[[Any], Any]:
     """Handle nested Pipeline objects recursively."""
     # Recursively compile the nested pipeline to maintain optimization
     return compile_pipeline(pipeline_step)
@@ -35,7 +37,7 @@ def handle_nested_pipeline(pipeline_step):
 
 
 @register_step_handler(ColumnTransformer)
-def handle_column_transformer(step):
+def handle_column_transformer(step: ColumnTransformer) -> Callable[[Any], Any]:
     """Handle ColumnTransformer for single-row input."""
     transformers = []
 
@@ -47,8 +49,8 @@ def handle_column_transformer(step):
             # For passthrough, just extract the specified columns
             col_indices = columns if isinstance(columns, (list, tuple)) else [columns]
 
-            def make_passthrough_fn(indices):
-                def passthrough_fn(x):
+            def make_passthrough_fn(indices: list[Any]) -> Callable[[Any], Any]:
+                def passthrough_fn(x: Any) -> Any:
                     if isinstance(x, dict):
                         return [x[col] for col in indices]
                     else:
@@ -56,7 +58,7 @@ def handle_column_transformer(step):
 
                 return passthrough_fn
 
-            transformers.append((make_passthrough_fn(col_indices), columns))
+            transformers.append((make_passthrough_fn(list(col_indices)), columns))
         else:
             # Get handler for the actual transformer
             handler = get_handler(type(transformer))
@@ -69,9 +71,9 @@ def handle_column_transformer(step):
             fn = handler(transformer)
             transformers.append((fn, columns))
 
-    def transform_one(x):
+    def transform_one(x: Any) -> Any:
         """Transform a single row through the ColumnTransformer."""
-        results = []
+        results: list[Any] = []
 
         for fn, columns in transformers:
             # Extract values for the specified columns
@@ -118,7 +120,7 @@ def handle_column_transformer(step):
 # ============================================================================
 
 
-def compile_pipeline(pipeline):
+def compile_pipeline(pipeline: Pipeline) -> Callable[[Any], Any]:
     """
     Compile a scikit-learn pipeline into a fast single-row prediction function.
 
@@ -140,7 +142,7 @@ def compile_pipeline(pipeline):
             handler = create_fallback_handler
         steps.append(handler(step))
 
-    def predict_one(x):
+    def predict_one(x: Any) -> Any:
         """Fast single-row prediction function."""
         for fn in steps:
             x = fn(x)

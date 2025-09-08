@@ -3,7 +3,7 @@ Category encoders transformers handlers for single-row inference.
 These are optional transformers from the category_encoders library.
 """
 
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -19,7 +19,7 @@ except ImportError:
 from ...registry import register_step_handler
 
 
-def _safe_fit_supervised_encoder(encoder, X, y):
+def _safe_fit_supervised_encoder(encoder: Any, X: Any, y: Any) -> Any:
     """
     Safely fit a supervised encoder by temporarily patching sklearn compatibility issues.
 
@@ -29,7 +29,7 @@ def _safe_fit_supervised_encoder(encoder, X, y):
     original_get_tags = getattr(encoder, "_get_tags", None)
 
     # Temporarily patch _get_tags to avoid the sklearn compatibility issue
-    def mock_get_tags():
+    def mock_get_tags() -> dict[str, bool]:
         return {"supervised_encoder": True}
 
     encoder._get_tags = mock_get_tags
@@ -54,12 +54,12 @@ def _safe_fit_supervised_encoder(encoder, X, y):
 if CATEGORY_ENCODERS_AVAILABLE:
 
     @register_step_handler(ce.BinaryEncoder)
-    def handle_binary_encoder(step: Any):
+    def handle_binary_encoder(step: Any) -> Callable[[Any], Any]:
         """Handle BinaryEncoder for single-row input."""
         # Get the mapping information
         mapping = step.mapping
 
-        def transform_one(x):
+        def transform_one(x: Any) -> Any:
             # Convert to dict if it's a list/array with column names
             if isinstance(x, (list, np.ndarray)):
                 # Assume x is ordered according to the columns used during fit
@@ -114,11 +114,11 @@ if CATEGORY_ENCODERS_AVAILABLE:
         return transform_one
 
     @register_step_handler(ce.OneHotEncoder)
-    def handle_ce_one_hot_encoder(step: Any):
+    def handle_ce_one_hot_encoder(step: Any) -> Callable[[Any], Any]:
         """Handle category_encoders OneHotEncoder for single-row input."""
         mapping = step.mapping
 
-        def transform_one(x):
+        def transform_one(x: Any) -> Any:
             if isinstance(x, (list, np.ndarray)):
                 if hasattr(step, "cols") and step.cols:
                     x_dict = {col: x[i] for i, col in enumerate(step.cols)}
@@ -169,11 +169,11 @@ if CATEGORY_ENCODERS_AVAILABLE:
         return transform_one
 
     @register_step_handler(ce.OrdinalEncoder)
-    def handle_ce_ordinal_encoder(step: Any):
+    def handle_ce_ordinal_encoder(step: Any) -> Callable[[Any], Any]:
         """Handle category_encoders OrdinalEncoder for single-row input."""
         mapping = step.mapping
 
-        def transform_one(x):
+        def transform_one(x: Any) -> Any:
             if isinstance(x, (list, np.ndarray)):
                 if hasattr(step, "cols") and step.cols:
                     x_dict = {col: x[i] for i, col in enumerate(step.cols)}
@@ -206,11 +206,11 @@ if CATEGORY_ENCODERS_AVAILABLE:
         return transform_one
 
     @register_step_handler(ce.HashingEncoder)
-    def handle_hashing_encoder(step: Any):
+    def handle_hashing_encoder(step: Any) -> Callable[[Any], Any]:
         """Handle HashingEncoder for single-row input."""
         import hashlib
 
-        def transform_one(x):
+        def transform_one(x: Any) -> Any:
             if isinstance(x, (list, np.ndarray)):
                 if hasattr(step, "cols") and step.cols:
                     x_dict = {col: x[i] for i, col in enumerate(step.cols)}
@@ -244,11 +244,11 @@ if CATEGORY_ENCODERS_AVAILABLE:
         return transform_one
 
     @register_step_handler(ce.TargetEncoder)
-    def handle_target_encoder(step: Any):
+    def handle_target_encoder(step: Any) -> Callable[[Any], Any]:
         """Handle TargetEncoder for single-row input."""
         mapping = step.mapping
 
-        def transform_one(x):
+        def transform_one(x: Any) -> Any:
             if isinstance(x, (list, np.ndarray)):
                 if hasattr(step, "cols") and step.cols:
                     x_dict = {col: x[i] for i, col in enumerate(step.cols)}
@@ -308,11 +308,11 @@ if CATEGORY_ENCODERS_AVAILABLE:
         return transform_one
 
     @register_step_handler(ce.CatBoostEncoder)
-    def handle_catboost_encoder(step: Any):
+    def handle_catboost_encoder(step: Any) -> Callable[[Any], Any]:
         """Handle CatBoostEncoder for single-row input."""
         mapping = step.mapping
 
-        def transform_one(x):
+        def transform_one(x: Any) -> Any:
             if isinstance(x, (list, np.ndarray)):
                 if hasattr(step, "cols") and step.cols:
                     x_dict = {col: x[i] for i, col in enumerate(step.cols)}
@@ -354,11 +354,11 @@ if CATEGORY_ENCODERS_AVAILABLE:
         return transform_one
 
     @register_step_handler(ce.LeaveOneOutEncoder)
-    def handle_leave_one_out_encoder(step: Any):
+    def handle_leave_one_out_encoder(step: Any) -> Callable[[Any], Any]:
         """Handle LeaveOneOutEncoder for single-row input."""
         mapping = step.mapping
 
-        def transform_one(x):
+        def transform_one(x: Any) -> Any:
             if isinstance(x, (list, np.ndarray)):
                 if hasattr(step, "cols") and step.cols:
                     x_dict = {col: x[i] for i, col in enumerate(step.cols)}

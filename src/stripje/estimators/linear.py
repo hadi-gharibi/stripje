@@ -69,7 +69,7 @@ def handle_linear_regression(
     intercept = step.intercept_
 
     def predict_one(x: Sequence[Union[float, int]]) -> float:
-        return sum(coef[i] * x[i] for i in range(len(x))) + intercept
+        return float(sum(coef[i] * x[i] for i in range(len(x))) + intercept)
 
     return predict_one
 
@@ -81,7 +81,7 @@ def handle_ridge(step: Ridge) -> Callable[[Sequence[Union[float, int]]], float]:
     intercept = step.intercept_
 
     def predict_one(x: Sequence[Union[float, int]]) -> float:
-        return sum(coef[i] * x[i] for i in range(len(x))) + intercept
+        return float(sum(coef[i] * x[i] for i in range(len(x))) + intercept)
 
     return predict_one
 
@@ -124,7 +124,7 @@ def handle_lasso(step: Lasso) -> Callable[[Sequence[Union[float, int]]], float]:
     intercept = step.intercept_
 
     def predict_one(x: Sequence[Union[float, int]]) -> float:
-        return sum(coef[i] * x[i] for i in range(len(x))) + intercept
+        return float(sum(coef[i] * x[i] for i in range(len(x))) + intercept)
 
     return predict_one
 
@@ -138,7 +138,7 @@ def handle_elastic_net(
     intercept = step.intercept_
 
     def predict_one(x: Sequence[Union[float, int]]) -> float:
-        return sum(coef[i] * x[i] for i in range(len(x))) + intercept
+        return float(sum(coef[i] * x[i] for i in range(len(x))) + intercept)
 
     return predict_one
 
@@ -178,6 +178,6 @@ def handle_sgd_regressor(
     intercept = step.intercept_
 
     def predict_one(x: Sequence[Union[float, int]]) -> float:
-        return sum(coef[i] * x[i] for i in range(len(x))) + intercept
+        return float(sum(coef[i] * x[i] for i in range(len(x))) + intercept)
 
     return predict_one
