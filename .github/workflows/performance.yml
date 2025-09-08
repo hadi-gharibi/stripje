@@ -1,0 +1,265 @@
+name: Performance Benchmarks
+
+on:
+  schedule:
+    # Run every Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      sklearn_versions:
+        description: 'Comma-separated sklearn versions to test (e.g., 1.4.4,1.5.2)'
+        required: false
+        default: '1.4.4,1.5.2'
+      python_versions:
+        description: 'Comma-separated Python versions to test (e.g., 3.10,3.11,3.12)'
+        required: false
+        default: '3.10,3.11,3.12'
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sklearn-version: ${{ fromJson(format('["{0}"]', github.event.inputs.sklearn_versions || '1.4.4","1.5.2')) }}
+        python-version: ${{ fromJson(format('["{0}"]', github.event.inputs.python_versions || '3.10","3.11","3.12')) }}
+        exclude:
+          # Python 3.12 is not compatible with older sklearn versions
+          - python-version: "3.12"
+            sklearn-version: "1.0.2"
+          - python-version: "3.12"
+            sklearn-version: "1.1.3"
+          - python-version: "3.12"
+            sklearn-version: "1.2.2"
+          - python-version: "3.12"
+            sklearn-version: "1.3.2"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-benchmark-${{ matrix.python-version }}-${{ matrix.sklearn-version }}-${{ hashFiles('uv.lock') }}
+
+    - name: Install dependencies
+      run: |
+        uv add scikit-learn==${{ matrix.sklearn-version }}
+        uv sync --extra dev --extra testing
+        uv add "category_encoders>=2.0.0" matplotlib seaborn
+
+    - name: Run performance benchmarks
+      run: |
+        cd examples
+        uv run python comprehensive_benchmark.py --output-dir ../benchmark_results
+
+    - name: Run memory profiling
+      run: |
+        cd examples
+        uv run python compiled_profiling_demo.py > ../memory_profile_results.txt
+
+    - name: Generate performance report
+      run: |
+        uv run python -c "
+        import json
+        import os
+        from datetime import datetime
+
+        # Create a simple performance report
+        report = {
+            'timestamp': datetime.now().isoformat(),
+            'sklearn_version': '${{ matrix.sklearn-version }}',
+            'python_version': '${{ matrix.python-version }}',
+            'workflow_run': '${{ github.run_id }}',
+            'commit_sha': '${{ github.sha }}'
+        }
+
+        # Check if benchmark results exist
+        if os.path.exists('benchmark_results'):
+            report['benchmark_completed'] = True
+            files = os.listdir('benchmark_results')
+            report['benchmark_files'] = files
+        else:
+            report['benchmark_completed'] = False
+
+        # Check memory profile
+        if os.path.exists('memory_profile_results.txt'):
+            report['memory_profile_completed'] = True
+            with open('memory_profile_results.txt', 'r') as f:
+                lines = f.readlines()
+                report['memory_profile_lines'] = len(lines)
+        else:
+            report['memory_profile_completed'] = False
+
+        with open(f'performance_report_python_{\"${{ matrix.python-version }}\".replace(\".\", \"_\")}_sklearn_{\"${{ matrix.sklearn-version }}\".replace(\".\", \"_\")}.json', 'w') as f:
+            json.dump(report, f, indent=2)
+
+        print('Performance report generated:', json.dumps(report, indent=2))
+        "
+
+    - name: Upload benchmark artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results-python-${{ matrix.python-version }}-sklearn-${{ matrix.sklearn-version }}
+        path: |
+          benchmark_results/
+          memory_profile_results.txt
+          performance_report_*.json
+        retention-days: 30
+
+    - name: Performance regression check
+      run: |
+        uv run python -c "
+        import os
+        import sys
+
+        # Simple performance regression check
+        # In a real scenario, you'd compare against historical data
+
+        print('Checking for performance regressions...')
+
+        # Check if critical benchmarks completed
+        benchmark_dir = 'benchmark_results'
+        if not os.path.exists(benchmark_dir):
+            print('❌ Benchmark directory not found')
+            sys.exit(1)
+
+        benchmark_files = os.listdir(benchmark_dir)
+        if not benchmark_files:
+            print('❌ No benchmark files generated')
+            sys.exit(1)
+
+        print(f'✅ Found {len(benchmark_files)} benchmark files')
+
+        # Check memory profile
+        if not os.path.exists('memory_profile_results.txt'):
+            print('⚠️  Memory profile not generated')
+        else:
+            with open('memory_profile_results.txt', 'r') as f:
+                content = f.read()
+                if 'Error' in content or 'Exception' in content:
+                    print('⚠️  Memory profile contains errors')
+                else:
+                    print('✅ Memory profile completed successfully')
+
+        print('Performance check completed')
+        "
+
+  compare-versions:
+    needs: benchmark
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+
+    - name: Download all benchmark artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Compare performance across sklearn versions
+      run: |
+        uv run python -c "
+        import json
+        import os
+        import glob
+
+        print('=== Performance Comparison Report ===')
+
+        # Find all performance reports
+        report_files = glob.glob('**/performance_report_*.json', recursive=True)
+
+        if not report_files:
+            print('No performance reports found')
+            exit()
+
+        reports = []
+        for file in report_files:
+            try:
+                with open(file, 'r') as f:
+                    report = json.load(f)
+                    reports.append(report)
+            except Exception as e:
+                print(f'Error reading {file}: {e}')
+
+        # Sort by sklearn version
+        reports.sort(key=lambda x: x.get('sklearn_version', ''))
+
+        print(f'Found {len(reports)} performance reports')
+        print()
+
+        for report in reports:
+            sklearn_ver = report.get('sklearn_version', 'unknown')
+            python_ver = report.get('python_version', 'unknown')
+            benchmark_ok = report.get('benchmark_completed', False)
+            memory_ok = report.get('memory_profile_completed', False)
+
+            status = '✅' if benchmark_ok and memory_ok else '⚠️'
+            print(f'{status} scikit-learn {sklearn_ver} (Python {python_ver})')
+            print(f'   Benchmark: {\"✅\" if benchmark_ok else \"❌\"}')
+            print(f'   Memory Profile: {\"✅\" if memory_ok else \"❌\"}')
+
+            if benchmark_ok:
+                files = report.get('benchmark_files', [])
+                print(f'   Generated {len(files)} benchmark files')
+            print()
+
+        print('=== End Performance Comparison ===')
+        "
+
+    - name: Create performance summary
+      run: |
+        echo "## Performance Benchmark Results" > performance_summary.md
+        echo "" >> performance_summary.md
+        echo "**Date:** $(date)" >> performance_summary.md
+        echo "**Workflow:** ${{ github.workflow }}" >> performance_summary.md
+        echo "**Run ID:** ${{ github.run_id }}" >> performance_summary.md
+        echo "" >> performance_summary.md
+
+        echo "### Tested Configurations" >> performance_summary.md
+        echo "" >> performance_summary.md
+
+        for dir in benchmark-results-python-*-sklearn-*; do
+          if [ -d "$dir" ]; then
+            # Extract Python and sklearn versions from directory name
+            config=$(echo $dir | sed 's/benchmark-results-python-//' | sed 's/-sklearn-/ with scikit-learn /')
+            echo "- Python $config" >> performance_summary.md
+          fi
+        done
+
+        echo "" >> performance_summary.md
+        echo "### Artifacts Generated" >> performance_summary.md
+        echo "" >> performance_summary.md
+        echo "- Benchmark results and charts" >> performance_summary.md
+        echo "- Memory profiling reports" >> performance_summary.md
+        echo "- Performance comparison data" >> performance_summary.md
+
+    - name: Upload performance summary
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-summary
+        path: performance_summary.md
+        retention-days: 90

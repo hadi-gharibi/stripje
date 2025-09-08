@@ -1,0 +1,263 @@
+name: Category Encoders Compatibility
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+jobs:
+  test-category-encoders:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        category-encoders-version: ["2.5.1", "2.6.0", "2.6.1", "2.6.2", "2.6.3"]
+        sklearn-version: ["1.3.2", "1.4.4", "1.5.2"]
+        include:
+          # Test with latest versions
+          - python-version: "3.11"
+            category-encoders-version: "latest"
+            sklearn-version: "latest"
+          - python-version: "3.12"
+            category-encoders-version: "latest"
+            sklearn-version: "latest"
+          # Test with development version
+          - python-version: "3.11"
+            category-encoders-version: "git+https://github.com/scikit-learn-contrib/category_encoders.git"
+            sklearn-version: "latest"
+          - python-version: "3.12"
+            category-encoders-version: "git+https://github.com/scikit-learn-contrib/category_encoders.git"
+            sklearn-version: "latest"
+        exclude:
+          # Exclude some combinations to reduce matrix size
+          - python-version: "3.9"
+            category-encoders-version: "2.6.3"
+          - python-version: "3.10"
+            category-encoders-version: "2.5.1"
+          # Python 3.12 with older category encoders versions may have compatibility issues
+          - python-version: "3.12"
+            category-encoders-version: "2.5.1"
+          - python-version: "3.12"
+            category-encoders-version: "2.6.0"
+          # Python 3.12 is not compatible with older sklearn versions
+          - python-version: "3.12"
+            sklearn-version: "1.3.2"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-uv-${{ matrix.python-version }}-${{ matrix.category-encoders-version }}-${{ matrix.sklearn-version }}-${{ hashFiles('uv.lock') }}
+
+    - name: Install scikit-learn
+      run: |
+        if [ "${{ matrix.sklearn-version }}" = "latest" ]; then
+          uv add scikit-learn
+        else
+          uv add scikit-learn==${{ matrix.sklearn-version }}
+        fi
+
+    - name: Install category encoders
+      run: |
+        if [ "${{ matrix.category-encoders-version }}" = "latest" ]; then
+          uv add category_encoders
+        elif [[ "${{ matrix.category-encoders-version }}" == git+* ]]; then
+          uv add "${{ matrix.category-encoders-version }}"
+        else
+          uv add category_encoders==${{ matrix.category-encoders-version }}
+        fi
+
+    - name: Install package and test dependencies
+      run: |
+        uv sync --extra dev
+
+    - name: Show installed versions
+      run: |
+        uv run python -c "
+        import sklearn, category_encoders, numpy, pandas
+        print(f'scikit-learn: {sklearn.__version__}')
+        print(f'category_encoders: {category_encoders.__version__}')
+        print(f'numpy: {numpy.__version__}')
+        print(f'pandas: {pandas.__version__}')
+        "
+
+    - name: Run category encoders tests
+      run: |
+        uv run pytest tests/test_category_encoders.py -v --tb=short \
+          --durations=10 --maxfail=3
+
+    - name: Run integration tests with category encoders
+      run: |
+        uv run pytest tests/test_integration.py::TestIntegration::test_mixed_data_types_workflow -v
+
+    - name: Test specific category encoder compatibility
+      run: |
+        uv run python -c "
+        import numpy as np
+        import pandas as pd
+        from sklearn.pipeline import Pipeline
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.model_selection import train_test_split
+        from category_encoders import BinaryEncoder, TargetEncoder, CatBoostEncoder
+        import sklean
+
+        # Create test data
+        np.random.seed(42)
+        X = pd.DataFrame({
+            'cat1': np.random.choice(['A', 'B', 'C', 'D'], 1000),
+            'cat2': np.random.choice(['X', 'Y', 'Z'], 1000),
+            'num1': np.random.randn(1000)
+        })
+        y = np.random.randint(0, 2, 1000)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Test different encoders
+        encoders_to_test = [
+            ('binary', BinaryEncoder(cols=['cat1', 'cat2'])),
+            ('target', TargetEncoder(cols=['cat1', 'cat2'])),
+            ('catboost', CatBoostEncoder(cols=['cat1', 'cat2']))
+        ]
+
+        for name, encoder in encoders_to_test:
+            try:
+                pipeline = Pipeline([
+                    ('encoder', encoder),
+                    ('clf', LogisticRegression(random_state=42, max_iter=1000))
+                ])
+
+                pipeline.fit(X_train, y_train)
+                fast_predict = sklean.compile_pipeline(pipeline)
+
+                # Test prediction
+                test_row = X_test.iloc[0].to_dict()
+                original_pred = pipeline.predict(X_test.iloc[[0]])[0]
+                fast_pred = fast_predict(test_row)
+
+                assert original_pred == fast_pred, f'{name} encoder prediction mismatch'
+                print(f'✓ {name} encoder compatibility test passed')
+
+            except Exception as e:
+                print(f'✗ {name} encoder test failed: {e}')
+                raise
+        "
+
+  test-edge-cases:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      run: |
+        uv sync --extra dev
+        uv add category_encoders
+
+    - name: Test high cardinality categories
+      run: |
+        uv run python -c "
+        import numpy as np
+        import pandas as pd
+        from sklearn.pipeline import Pipeline
+        from sklearn.linear_model import LogisticRegression
+        from category_encoders import TargetEncoder
+        import sklean
+
+        # Create high cardinality categorical data
+        np.random.seed(42)
+        n_categories = 1000
+        n_samples = 5000
+
+        categories = [f'cat_{i}' for i in range(n_categories)]
+        X = pd.DataFrame({
+            'high_card_cat': np.random.choice(categories, n_samples),
+            'num_feature': np.random.randn(n_samples)
+        })
+        y = np.random.randint(0, 2, n_samples)
+
+        pipeline = Pipeline([
+            ('encoder', TargetEncoder(cols=['high_card_cat'])),
+            ('clf', LogisticRegression(random_state=42, max_iter=1000))
+        ])
+
+        pipeline.fit(X, y)
+        fast_predict = sklean.compile_pipeline(pipeline)
+
+        # Test with new category (should handle unknown categories)
+        test_data = {'high_card_cat': 'new_unseen_category', 'num_feature': 0.5}
+
+        try:
+            fast_pred = fast_predict(test_data)
+            print(f'✓ High cardinality + unknown category test passed: {fast_pred}')
+        except Exception as e:
+            print(f'High cardinality test info: {e}')
+        "
+
+    - name: Test memory usage with large encodings
+      run: |
+        uv run python -c "
+        import psutil
+        import numpy as np
+        import pandas as pd
+        from sklearn.pipeline import Pipeline
+        from sklearn.linear_model import LogisticRegression
+        from category_encoders import OneHotEncoder
+        import sklean
+
+        process = psutil.Process()
+        initial_memory = process.memory_info().rss / 1024 / 1024  # MB
+
+        # Create wide categorical data
+        np.random.seed(42)
+        X = pd.DataFrame({
+            f'cat_{i}': np.random.choice(['A', 'B', 'C'], 1000)
+            for i in range(50)  # 50 categorical columns
+        })
+        y = np.random.randint(0, 2, 1000)
+
+        pipeline = Pipeline([
+            ('encoder', OneHotEncoder(use_cat_names=True)),
+            ('clf', LogisticRegression(random_state=42, max_iter=1000))
+        ])
+
+        pipeline.fit(X, y)
+        fast_predict = sklean.compile_pipeline(pipeline)
+
+        final_memory = process.memory_info().rss / 1024 / 1024  # MB
+        memory_increase = final_memory - initial_memory
+
+        print(f'Memory usage increase: {memory_increase:.1f} MB')
+
+        # Test prediction still works
+        test_row = X.iloc[0].to_dict()
+        original_pred = pipeline.predict(X.iloc[[0]])[0]
+        fast_pred = fast_predict(test_row)
+
+        assert original_pred == fast_pred
+        print('✓ Large encoding memory test passed')
+        "

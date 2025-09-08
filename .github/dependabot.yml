@@ -1,0 +1,56 @@
+version: 2
+updates:
+  # Enable version updates for Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    assignees:
+      - "hadi-gharibi"  # GitHub username
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "python"
+    # Group updates for related packages
+    groups:
+      testing:
+        patterns:
+          - "pytest*"
+          - "*testing*"
+      linting:
+        patterns:
+          - "ruff"
+          - "mypy"
+          - "bandit"
+          - "safety"
+      sklearn:
+        patterns:
+          - "scikit-learn"
+          - "category_encoders"
+      data:
+        patterns:
+          - "numpy"
+          - "pandas"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    assignees:
+      - "hadi-gharibi"  # GitHub username
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"

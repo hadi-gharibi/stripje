@@ -1,0 +1,64 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Testing
+.pytest_cache/
+
+# Virtual environments
+.venv
+agent.md
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+# macOS
+.DS_Store
+# Logs and databases
+*.log
+*.sqlite3
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+# MyPy
+.mypy_cache/
+.dmypy.json
+# Cython debug symbols
+cython_debug/
+# Local env files
+.env
+.env.*
+# Rope project settings
+.ropeproject/
+# Pyre type checker
+.pyre/
+# pyright type checker
+.pyright/
+# pytype type checker
+.pytype/
+# Profiling data
+.prof
+# pyenv
+.python-version
+# pipenv
+Pipfile.lock
+# poetry
+poetry.lock
+# PEP 582; used by e.g. github.com/David-OConnor/python-is
+__pypackages__/
+# counter
+.VSCodeCounter/
+# issues
+.issues/

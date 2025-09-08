@@ -1,0 +1,167 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-lint-${{ hashFiles('uv.lock') }}
+
+    - name: Install dependencies
+      run: |
+        uv sync --extra dev
+
+    - name: Lint with ruff (check)
+      run: |
+        uv run ruff check src tests --output-format=github
+
+    - name: Check formatting with ruff
+      run: |
+        uv run ruff format --check src tests
+
+    - name: Type check with mypy
+      run: |
+        uv run mypy src/stripje --show-error-codes
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+
+    - name: Install dependencies
+      run: |
+        uv add bandit[toml] safety
+
+    - name: Run bandit security linter
+      run: |
+        uv run bandit -r src/ -f json -o bandit-report.json
+        uv run bandit -r src/ # Also show human readable output
+
+    - name: Check dependencies for security vulnerabilities
+      run: |
+        uv run safety check --json --output safety-report.json
+        uv run safety check # Also show human readable output
+
+    - name: Upload security reports
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+
+    - name: Install dependencies
+      run: |
+        uv sync --extra dev
+        uv add pydocstyle
+
+    - name: Check docstring style
+      run: |
+        uv run pydocstyle src/stripje --convention=google
+
+    - name: Test imports
+      run: |
+        uv run python -c "import stripje; print('Import successful')"
+        uv run python -c "from stripje import compile_pipeline, get_supported_transformers; print('Core functions importable')"
+
+  compatibility:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.9", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+
+    - name: Install dependencies
+      run: |
+        uv sync --no-dev
+
+    - name: Test basic functionality
+      run: |
+        uv run python -c "
+        import stripje
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.pipeline import Pipeline
+        from sklearn.datasets import make_classification
+
+        X, y = make_classification(n_samples=100, n_features=4, random_state=42)
+
+        pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('clf', LogisticRegression(random_state=42))
+        ])
+
+        pipeline.fit(X, y)
+        fast_predict = stripje.compile_pipeline(pipeline)
+
+        # Test prediction
+        test_row = X[0].tolist()
+        original_pred = pipeline.predict([test_row])[0]
+        fast_pred = fast_predict(test_row)
+
+        assert original_pred == fast_pred
+        print(f'Basic functionality test passed on {\"${{ matrix.os }}\"} with Python ${{ matrix.python-version }}')
+        "

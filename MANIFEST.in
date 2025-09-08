@@ -1,0 +1,12 @@
+# Include documentation files
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+
+# Include configuration files
+include pyproject.toml
+include Makefile
+
+# Include examples directory
+recursive-include examples *.py

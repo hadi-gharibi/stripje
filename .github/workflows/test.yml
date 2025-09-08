@@ -1,0 +1,170 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        sklearn-version: ["1.0.2", "1.1.3", "1.2.2", "1.3.2", "1.4.4", "1.5.2"]
+        include:
+          # Test with category encoders on a subset of configurations
+          - python-version: "3.9"
+            sklearn-version: "1.3.2"
+            test-category-encoders: true
+          - python-version: "3.10"
+            sklearn-version: "1.4.4"
+            test-category-encoders: true
+          - python-version: "3.11"
+            sklearn-version: "1.5.2"
+            test-category-encoders: true
+          - python-version: "3.12"
+            sklearn-version: "1.5.2"
+            test-category-encoders: true
+        exclude:
+          # Python 3.12 is not compatible with older sklearn versions
+          - python-version: "3.12"
+            sklearn-version: "1.0.2"
+          - python-version: "3.12"
+            sklearn-version: "1.1.3"
+          - python-version: "3.12"
+            sklearn-version: "1.2.2"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-uv-${{ matrix.python-version }}-${{ matrix.sklearn-version }}-${{ hashFiles('uv.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-${{ matrix.python-version }}-
+          ${{ runner.os }}-uv-
+
+    - name: Install scikit-learn ${{ matrix.sklearn-version }}
+      run: |
+        uv add scikit-learn==${{ matrix.sklearn-version }}
+
+    - name: Install package dependencies
+      run: |
+        uv sync --extra dev
+
+    - name: Install category encoders (if testing)
+      if: matrix.test-category-encoders
+      run: |
+        uv add "category_encoders>=2.0.0"
+
+    - name: Lint with ruff
+      run: |
+        uv run ruff check src tests
+        uv run ruff format --check src tests
+
+    - name: Type check with mypy
+      run: |
+        uv run mypy src/stripje
+
+    - name: Run core tests
+      run: |
+        uv run pytest tests/ -v --tb=short --durations=10 \
+          --ignore=tests/test_category_encoders.py \
+          --cov=stripje --cov-report=xml --cov-report=term-missing
+
+    - name: Run category encoders tests
+      if: matrix.test-category-encoders
+      run: |
+        uv run pytest tests/test_category_encoders.py -v --tb=short
+
+    - name: Upload coverage to Codecov
+      if: matrix.python-version == '3.11' && matrix.sklearn-version == '1.5.2'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  test-minimal:
+    name: Test minimal dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.11"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+
+    - name: Install minimal dependencies
+      run: |
+        uv sync --no-dev
+        uv add pytest
+
+    - name: Run minimal tests (core functionality only)
+      run: |
+        uv run pytest tests/test_fast_pipeline.py tests/test_integration.py -v
+
+  test-edge-cases:
+    name: Test edge cases and performance
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+
+    - name: Install dependencies
+      run: |
+        uv sync --extra dev
+        uv add "category_encoders>=2.0.0"
+
+    - name: Run performance benchmarks
+      run: |
+        uv run pytest tests/test_performance_benchmarks.py -v --tb=short
+
+    - name: Run edge case tests
+      run: |
+        uv run pytest tests/test_fallback_mechanism.py -v --tb=short
+
+    - name: Test example scripts
+      run: |
+        cd examples
+        uv run python simple_example.py
+        uv run python benchmark.py
+        uv run python profiler_demo.py
