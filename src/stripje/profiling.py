@@ -213,17 +213,11 @@ class PipelineProfiler:
         """Profile the compiled single-row pipeline produced by Stripje."""
 
         root = ProfileNode(name="compiled_pipeline", kind="callable", method="call")
-        steps = self._compiled_steps()
-        current = self._coerce_single_sample(sample)
+        current = sample  # Keep original format for column transformers
         start_root = perf_counter_ns()
 
-        for name, fn in steps:
-            node = root.child(name=name, kind="compiled_step", method="call")
-            start = perf_counter_ns()
-            current = fn(current)
-            current = self._coerce_single_sample(current)
-            end = perf_counter_ns()
-            node.add_event(start, end)
+        for name, step in self.pipeline.steps:
+            current = self._profile_compiled_step(step, name, current, root)
 
         end_root = perf_counter_ns()
         root.add_event(start_root, end_root)
@@ -232,6 +226,152 @@ class PipelineProfiler:
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    def _profile_compiled_step(
+        self, step: Any, name: str, data: Any, parent: ProfileNode
+    ) -> Any:
+        """Profile a compiled step, recursing into nested structures."""
+        node = parent.child(
+            name=name, kind=type(step).__name__, method="call"
+        )
+
+        start = perf_counter_ns()
+        
+        # Handle nested Pipeline
+        if isinstance(step, Pipeline):
+            current = data
+            for sub_name, sub_step in step.steps:
+                current = self._profile_compiled_step(sub_step, sub_name, current, node)
+            result = current
+        
+        # Handle ColumnTransformer
+        elif isinstance(step, ColumnTransformer):
+            result = self._profile_compiled_column_transformer(step, data, node)
+        
+        # Handle regular transformers/estimators
+        else:
+            handler = get_handler(type(step))
+            if handler is None:
+                handler = create_fallback_handler
+            compiled_fn = handler(step)
+            result = compiled_fn(data)
+            result = self._coerce_single_sample(result)
+        
+        end = perf_counter_ns()
+        node.add_event(start, end)
+        
+        return result
+
+    def _extract_columns(self, data: Any, columns: Any) -> Any:
+        """Extract specific columns from data (handles Series, DataFrame, ndarray)."""
+        # Handle pandas Series (single row from DataFrame)
+        if hasattr(data, 'index') and not hasattr(data, 'iloc'):
+            # This is a pandas Series
+            return data[columns]
+        
+        # Handle pandas DataFrame
+        if hasattr(data, 'iloc'):
+            return data[columns]
+        
+        # Handle numpy array - columns should be indices
+        if isinstance(data, np.ndarray):
+            if isinstance(columns, (list, np.ndarray)):
+                return data[columns] if data.ndim == 1 else data[:, columns]
+            else:
+                return data[columns] if data.ndim == 1 else data[:, columns]
+        
+        return data
+
+    def _profile_compiled_column_transformer(
+        self, transformer: ColumnTransformer, data: Any, parent: ProfileNode
+    ) -> Any:
+        """Profile compiled ColumnTransformer with its sub-transformers."""
+        # For compiled pipelines, we need to profile each transformer branch
+        results = []
+        
+        # Convert data to DataFrame if it's a Series (single row)
+        is_series = hasattr(data, 'index') and not hasattr(data, 'iloc')
+        if is_series:
+            # Convert Series to single-row DataFrame for ColumnTransformer
+            import pandas as pd
+            data_df = pd.DataFrame([data])
+        else:
+            data_df = data
+        
+        for name, trans, columns in transformer.transformers_:
+            metadata = {"columns": columns}
+            
+            if trans == "drop":
+                child = parent.child(
+                    name=name, kind="drop", method="skip", metadata=metadata
+                )
+                noop = perf_counter_ns()
+                child.add_event(noop, noop)
+                continue
+            
+            if trans == "passthrough":
+                child = parent.child(
+                    name=name, kind="passthrough", method="identity", metadata=metadata
+                )
+                start = perf_counter_ns()
+                col_data = self._extract_columns(data_df, columns)
+                # Extract single row if needed
+                if hasattr(col_data, 'iloc'):
+                    col_data = col_data.iloc[0] if len(col_data) == 1 else col_data
+                results.append(self._coerce_single_sample(col_data))
+                end = perf_counter_ns()
+                child.add_event(start, end)
+                continue
+            
+            # Handle sub-pipeline or regular transformer
+            if isinstance(trans, Pipeline):
+                child = parent.child(
+                    name=name, kind=type(trans).__name__, method="call", metadata=metadata
+                )
+                start = perf_counter_ns()
+                
+                # Extract columns for this transformer
+                col_data = self._extract_columns(data_df, columns)
+                # Extract single row if needed
+                if hasattr(col_data, 'iloc') and len(col_data) == 1:
+                    col_data = col_data.iloc[0]
+                
+                # Process through the pipeline steps
+                current = col_data
+                for sub_name, sub_step in trans.steps:
+                    current = self._profile_compiled_step(sub_step, sub_name, current, child)
+                
+                results.append(self._coerce_single_sample(current))
+                end = perf_counter_ns()
+                child.add_event(start, end)
+            else:
+                # Regular transformer
+                child = parent.child(
+                    name=name, kind=type(trans).__name__, method="call", metadata=metadata
+                )
+                start = perf_counter_ns()
+                
+                # Extract columns and apply transformer
+                col_data = self._extract_columns(data_df, columns)
+                # Extract single row if needed
+                if hasattr(col_data, 'iloc') and len(col_data) == 1:
+                    col_data = col_data.iloc[0]
+                
+                handler = get_handler(type(trans))
+                if handler is None:
+                    handler = create_fallback_handler
+                compiled_fn = handler(trans)
+                result = compiled_fn(self._coerce_single_sample(col_data))
+                results.append(self._coerce_single_sample(result))
+                
+                end = perf_counter_ns()
+                child.add_event(start, end)
+        
+        # Concatenate results
+        if results:
+            combined = np.concatenate([r.ravel() if r.ndim > 1 else r for r in results])
+            return combined
+        return data
 
     def _compiled_steps(self) -> list[tuple[str, Callable[[Any], Any]]]:
         compiled_steps: list[tuple[str, Callable[[Any], Any]]] = []
