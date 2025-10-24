@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from contextlib import ExitStack, suppress
 from dataclasses import dataclass, field
@@ -175,6 +176,516 @@ class MethodTimer:
                 delattr(self.obj, self.method_name)
 
 
+# ==========================================
+# Helper: Column data extraction
+# ==========================================
+
+
+class ColumnDataHandler:
+    """Handles data preparation and column extraction for ColumnTransformer."""
+
+    @staticmethod
+    def prepare(data: Any) -> Any:
+        """Convert Series to DataFrame if needed."""
+        is_series = hasattr(data, "index") and not hasattr(data, "iloc")
+        if is_series:
+            import pandas as pd
+            return pd.DataFrame([data])
+        return data
+
+    @staticmethod
+    def extract_columns(data: Any, columns: Any) -> Any:
+        """Extract specific columns from data."""
+        # Handle pandas Series (single row from DataFrame)
+        if hasattr(data, "index") and not hasattr(data, "iloc"):
+            return data[columns]
+
+        # Handle pandas DataFrame
+        if hasattr(data, "iloc"):
+            return data[columns]
+
+        # Handle numpy array - columns should be indices
+        if isinstance(data, np.ndarray):
+            if isinstance(columns, (list, np.ndarray)):
+                return data[columns] if data.ndim == 1 else data[:, columns]
+            else:
+                return data[columns] if data.ndim == 1 else data[:, columns]
+
+        return data
+
+    @classmethod
+    def extract_and_prepare_single_row(cls, data: Any, columns: Any) -> Any:
+        """Extract columns and convert to single row if needed."""
+        col_data = cls.extract_columns(data, columns)
+        if hasattr(col_data, "iloc") and len(col_data) == 1:
+            return col_data.iloc[0]
+        return col_data
+
+
+def _coerce_single_sample(sample: Any) -> Any:
+    """Return a single sample in a numpy-friendly format for compiled steps."""
+    if isinstance(sample, np.ndarray):
+        return sample
+    if hasattr(sample, "to_numpy"):
+        arr = sample.to_numpy()
+        return arr
+    if isinstance(sample, dict):
+        return np.asarray(list(sample.values()))
+    return np.asarray(sample)
+
+
+def _determine_method(step: Any, is_last: bool, final_method: str) -> str:
+    """Determine which method to call on a pipeline step."""
+    if isinstance(step, Pipeline):
+        return final_method
+
+    if is_last:
+        if final_method == "predict" and hasattr(step, "predict"):
+            return "predict"
+        if final_method == "transform" and hasattr(step, "transform"):
+            return "transform"
+        if hasattr(step, final_method):
+            return final_method
+
+    if hasattr(step, "transform"):
+        return "transform"
+    if hasattr(step, final_method):
+        return final_method
+    if hasattr(step, "predict"):
+        return "predict"
+
+    raise AttributeError(
+        f"Cannot determine method for step {step!r}; expected one of transform/predict/fit."
+    )
+
+
+# ==========================================
+# Component Profilers: Handle specific types
+# ==========================================
+
+
+class ComponentProfiler(ABC):
+    """Base class for profiling specific component types."""
+
+    @abstractmethod
+    def profile(
+        self,
+        component: Any,
+        name: str,
+        data: Any,
+        parent: ProfileNode,
+        method: str,
+        y: Any = None,
+    ) -> Any:
+        """Profile in batch mode."""
+        pass
+
+    @abstractmethod
+    def profile_compiled(
+        self, component: Any, name: str, data: Any, parent: ProfileNode
+    ) -> Any:
+        """Profile in compiled mode."""
+        pass
+
+
+class DefaultComponentProfiler(ComponentProfiler):
+    """Profiles regular transformers/estimators."""
+
+    def profile(
+        self,
+        component: Any,
+        name: str,
+        data: Any,
+        parent: ProfileNode,
+        method: str,
+        y: Any = None,
+    ) -> Any:
+        node = parent.child(name, type(component).__name__, method)
+
+        start = perf_counter_ns()
+        args = (data,) if method != "fit" else (data, y)
+        result = getattr(component, method)(*args)
+        end = perf_counter_ns()
+
+        node.add_event(start, end)
+        return result
+
+    def profile_compiled(
+        self, component: Any, name: str, data: Any, parent: ProfileNode
+    ) -> Any:
+        node = parent.child(name, type(component).__name__, "call")
+
+        start = perf_counter_ns()
+        handler = get_handler(type(component))
+        if handler is None:
+            handler = create_fallback_handler
+        compiled_fn = handler(component)
+        result = compiled_fn(data)
+        result = _coerce_single_sample(result)
+        end = perf_counter_ns()
+
+        node.add_event(start, end)
+        return result
+
+
+class PipelineComponentProfiler(ComponentProfiler):
+    """Profiles nested Pipelines (recursive)."""
+
+    def __init__(self, batch_strategy: Any = None, compiled_strategy: Any = None):
+        self.batch_strategy = batch_strategy
+        self.compiled_strategy = compiled_strategy
+
+    def profile(
+        self,
+        component: Pipeline,
+        name: str,
+        data: Any,
+        parent: ProfileNode,
+        method: str,
+        y: Any = None,
+    ) -> Any:
+        node = parent.child(name, type(component).__name__, method)
+        return self.batch_strategy._profile_steps(component.steps, data, node, method, y)
+
+    def profile_compiled(
+        self, component: Pipeline, name: str, data: Any, parent: ProfileNode
+    ) -> Any:
+        node = parent.child(name, type(component).__name__, "call")
+        current = data
+        for sub_name, sub_step in component.steps:
+            current = self.compiled_strategy._profile_step(sub_step, sub_name, current, node)
+        return current
+
+
+class BatchColumnTransformerProfiler(ComponentProfiler):
+    """Handles ColumnTransformer in batch mode with MethodTimer."""
+
+    def __init__(self, batch_strategy: Any = None):
+        self.batch_strategy = batch_strategy
+
+    def profile(
+        self,
+        transformer: ColumnTransformer,
+        name: str,
+        data: Any,
+        parent: ProfileNode,
+        method: str,
+        y: Any = None,
+    ) -> Any:
+        node = parent.child(name, type(transformer).__name__, method)
+
+        if method not in {"transform", "fit_transform"}:
+            start = perf_counter_ns()
+            result = getattr(transformer, method)(data)
+            end = perf_counter_ns()
+            node.add_event(start, end)
+            return result
+
+        start = perf_counter_ns()
+        with ExitStack() as stack:
+            for trans_name, trans, columns in transformer.transformers_:
+                self._instrument_sub_transformer(
+                    trans_name, trans, columns, node, method, stack
+                )
+
+            with parallel_backend("threading"):
+                result = getattr(transformer, method)(data)
+        end = perf_counter_ns()
+        node.add_event(start, end)
+
+        # Add noop events for transformers that weren't actually called
+        for child in node.children:
+            if child.parent is node and not child.events:
+                noop = perf_counter_ns()
+                child.add_event(noop, noop)
+
+        return result
+
+    def _instrument_sub_transformer(
+        self, name: str, trans: Any, columns: Any, parent: ProfileNode, method: str, stack: ExitStack
+    ) -> None:
+        """Setup MethodTimer for sub-transformers."""
+        metadata = {"columns": columns}
+
+        if trans == "drop":
+            child = parent.child(name=name, kind="drop", method="skip", metadata=metadata)
+            if not child.events:
+                noop = perf_counter_ns()
+                child.add_event(noop, noop)
+            return
+
+        if trans == "passthrough":
+            child = parent.child(
+                name=name, kind="passthrough", method="identity", metadata=metadata
+            )
+            if not child.events:
+                noop = perf_counter_ns()
+                child.add_event(noop, noop)
+            return
+
+        child_method = method if hasattr(trans, method) else "transform"
+        child = parent.child(
+            name=name, kind=type(trans).__name__, method=child_method, metadata=metadata
+        )
+
+        if hasattr(trans, "steps"):
+            stack.enter_context(MethodTimer(trans, child_method, child))
+            self._instrument_pipeline_steps(trans, child, child_method, stack)
+        else:
+            stack.enter_context(MethodTimer(trans, child_method, child))
+
+    def _instrument_pipeline_steps(
+        self, pipeline: Any, parent_node: ProfileNode, final_method: str, stack: ExitStack
+    ) -> None:
+        """Recursively instrument nested pipeline steps."""
+        if not hasattr(pipeline, "steps"):
+            return
+
+        steps_list = list(pipeline.steps)
+        for idx, (name, step) in enumerate(steps_list):
+            method = _determine_method(step, idx == len(steps_list) - 1, final_method)
+            metadata = {"method": method}
+            step_node = parent_node.child(
+                name=name, kind=type(step).__name__, method=method, metadata=metadata
+            )
+
+            if isinstance(step, Pipeline):
+                stack.enter_context(MethodTimer(step, method, step_node))
+                self._instrument_pipeline_steps(step, step_node, method, stack)
+            elif isinstance(step, ColumnTransformer):
+                stack.enter_context(MethodTimer(step, method, step_node))
+            else:
+                stack.enter_context(MethodTimer(step, method, step_node))
+
+    def profile_compiled(
+        self, transformer: ColumnTransformer, name: str, data: Any, parent: ProfileNode
+    ) -> Any:
+        # Not used in batch strategy
+        raise NotImplementedError("Use CompiledColumnTransformerProfiler for compiled mode")
+
+
+class CompiledColumnTransformerProfiler(ComponentProfiler):
+    """Handles ColumnTransformer in compiled mode - extracts columns, profiles each."""
+
+    def __init__(self, compiled_strategy: Any = None):
+        self.compiled_strategy = compiled_strategy
+        self.data_handler = ColumnDataHandler()
+
+    def profile(
+        self,
+        transformer: ColumnTransformer,
+        name: str,
+        data: Any,
+        parent: ProfileNode,
+        method: str,
+        y: Any = None,
+    ) -> Any:
+        # Not used in compiled strategy
+        raise NotImplementedError("Use BatchColumnTransformerProfiler for batch mode")
+
+    def profile_compiled(
+        self, transformer: ColumnTransformer, name: str, data: Any, parent: ProfileNode
+    ) -> Any:
+        node = parent.child(name, type(transformer).__name__, "call")
+
+        data_df = self.data_handler.prepare(data)
+        results = []
+
+        for trans_name, trans, columns in transformer.transformers_:
+            result = self._profile_sub_transformer(trans_name, trans, columns, data_df, node)
+            if result is not None:
+                results.append(result)
+
+        return self._combine_results(results, data)
+
+    def _profile_sub_transformer(
+        self, name: str, trans: Any, columns: Any, data_df: Any, parent: ProfileNode
+    ) -> Any | None:
+        """Profile individual transformer within ColumnTransformer."""
+        if trans == "drop":
+            metadata = {"columns": columns}
+            child = parent.child(name=name, kind="drop", method="skip", metadata=metadata)
+            noop = perf_counter_ns()
+            child.add_event(noop, noop)
+            return None
+
+        if trans == "passthrough":
+            return self._profile_passthrough(name, columns, data_df, parent)
+
+        if isinstance(trans, Pipeline):
+            return self._profile_pipeline(name, trans, columns, data_df, parent)
+
+        return self._profile_regular(name, trans, columns, data_df, parent)
+
+    def _profile_passthrough(
+        self, name: str, columns: Any, data_df: Any, parent: ProfileNode
+    ) -> Any:
+        """Profile a 'passthrough' transformer."""
+        metadata = {"columns": columns}
+        child = parent.child(
+            name=name, kind="passthrough", method="identity", metadata=metadata
+        )
+        start = perf_counter_ns()
+        col_data = self.data_handler.extract_and_prepare_single_row(data_df, columns)
+        result = _coerce_single_sample(col_data)
+        end = perf_counter_ns()
+        child.add_event(start, end)
+        return result
+
+    def _profile_pipeline(
+        self, name: str, trans: Pipeline, columns: Any, data_df: Any, parent: ProfileNode
+    ) -> Any:
+        """Profile a nested Pipeline transformer."""
+        metadata = {"columns": columns}
+        child = parent.child(
+            name=name, kind=type(trans).__name__, method="call", metadata=metadata
+        )
+        start = perf_counter_ns()
+
+        col_data = self.data_handler.extract_and_prepare_single_row(data_df, columns)
+        current = col_data
+        for sub_name, sub_step in trans.steps:
+            current = self.compiled_strategy._profile_step(sub_step, sub_name, current, child)
+
+        result = _coerce_single_sample(current)
+        end = perf_counter_ns()
+        child.add_event(start, end)
+        return result
+
+    def _profile_regular(
+        self, name: str, trans: Any, columns: Any, data_df: Any, parent: ProfileNode
+    ) -> Any:
+        """Profile a regular (non-Pipeline) transformer."""
+        metadata = {"columns": columns}
+        child = parent.child(
+            name=name, kind=type(trans).__name__, method="call", metadata=metadata
+        )
+        start = perf_counter_ns()
+
+        col_data = self.data_handler.extract_and_prepare_single_row(data_df, columns)
+        handler = get_handler(type(trans))
+        if handler is None:
+            handler = create_fallback_handler
+        compiled_fn = handler(trans)
+        result = compiled_fn(_coerce_single_sample(col_data))
+        result = _coerce_single_sample(result)
+
+        end = perf_counter_ns()
+        child.add_event(start, end)
+        return result
+
+    @staticmethod
+    def _combine_results(results: list[Any], data: Any) -> Any:
+        """Combine results from multiple transformers into a single array."""
+        if results:
+            combined = np.concatenate([r.ravel() if r.ndim > 1 else r for r in results])
+            return combined
+        return data
+
+
+# ==========================================
+# Strategy Pattern: Separate profiling modes
+# ==========================================
+
+
+class ProfilingStrategy(ABC):
+    """Abstract base for different profiling strategies."""
+
+    @abstractmethod
+    def profile(self, pipeline: Pipeline, data: Any, parent: ProfileNode, y: Any = None) -> Any:
+        """Profile the pipeline and return output."""
+        pass
+
+
+class BatchProfilingStrategy(ProfilingStrategy):
+    """Profiles sklearn pipelines with batch data (transform/fit/predict)."""
+
+    def __init__(self, mode: str):
+        self.mode = mode
+        self.component_profilers: dict[type, ComponentProfiler] = {}
+        self._setup_profilers()
+
+    def _setup_profilers(self) -> None:
+        """Initialize component profilers with references to this strategy."""
+        pipeline_profiler = PipelineComponentProfiler(batch_strategy=self)
+        self.component_profilers = {
+            Pipeline: pipeline_profiler,
+            ColumnTransformer: BatchColumnTransformerProfiler(batch_strategy=self),
+        }
+
+    def profile(self, pipeline: Pipeline, data: Any, parent: ProfileNode, y: Any = None) -> Any:
+        return self._profile_steps(pipeline.steps, data, parent, self.mode, y)
+
+    def _profile_steps(
+        self,
+        steps: Iterable[tuple[str, Any]],
+        data: Any,
+        parent: ProfileNode,
+        final_method: str,
+        y: Any,
+    ) -> Any:
+        """Profile a sequence of pipeline steps."""
+        current = data
+        steps_list = list(steps)
+
+        for idx, (name, step) in enumerate(steps_list):
+            is_last = idx == len(steps_list) - 1
+            method = _determine_method(step, is_last, final_method)
+
+            profiler = self._get_profiler_for(step)
+            current = profiler.profile(step, name, current, parent, method, y)
+
+        return current
+
+    def _get_profiler_for(self, step: Any) -> ComponentProfiler:
+        """Return appropriate profiler for component type."""
+        for step_type, profiler in self.component_profilers.items():
+            if isinstance(step, step_type):
+                return profiler
+        return DefaultComponentProfiler()
+
+
+class CompiledProfilingStrategy(ProfilingStrategy):
+    """Profiles compiled single-row pipelines."""
+
+    def __init__(self):
+        self.component_profilers: dict[type, ComponentProfiler] = {}
+        self._setup_profilers()
+
+    def _setup_profilers(self) -> None:
+        """Initialize component profilers with references to this strategy."""
+        pipeline_profiler = PipelineComponentProfiler(compiled_strategy=self)
+        self.component_profilers = {
+            Pipeline: pipeline_profiler,
+            ColumnTransformer: CompiledColumnTransformerProfiler(compiled_strategy=self),
+        }
+
+    def profile(self, pipeline: Pipeline, data: Any, parent: ProfileNode, y: Any = None) -> Any:
+        current = data
+        for name, step in pipeline.steps:
+            current = self._profile_step(step, name, current, parent)
+        return current
+
+    def _profile_step(self, step: Any, name: str, data: Any, parent: ProfileNode) -> Any:
+        """Profile a single step in compiled mode."""
+        profiler = self._get_profiler_for(step)
+        return profiler.profile_compiled(step, name, data, parent)
+
+    def _get_profiler_for(self, step: Any) -> ComponentProfiler:
+        """Return appropriate profiler for component type."""
+        for step_type, profiler in self.component_profilers.items():
+            if isinstance(step, step_type):
+                return profiler
+        return DefaultComponentProfiler()
+
+
+# ==========================================
+# Main Profiler: Orchestrates everything
+# ==========================================
+
+
+
+
 class PipelineProfiler:
     """Profile scikit-learn pipelines and their compiled Stripje counterparts."""
 
@@ -193,17 +704,20 @@ class PipelineProfiler:
 
     def run(self, X: Any, y: Any = None) -> ProfileReport:
         """Profile the provided pipeline on the given batch input."""
+        strategy = BatchProfilingStrategy(mode=self.mode)
 
+        # Warmup
         for _ in range(self.warmup):
-            self._run_steps(self.pipeline.steps, X, None, self.mode, y)
+            strategy.profile(self.pipeline, X, ProfileNode("_warmup", "Pipeline", self.mode), y)
 
+        # Profile
         root = ProfileNode(
             name="pipeline", kind=type(self.pipeline).__name__, method=self.mode
         )
         output: Any = None
         for _ in range(self.repetitions):
             start = perf_counter_ns()
-            output = self._run_steps(self.pipeline.steps, X, root, self.mode, y)
+            output = strategy.profile(self.pipeline, X, root, y)
             end = perf_counter_ns()
             root.add_event(start, end)
 
@@ -211,367 +725,13 @@ class PipelineProfiler:
 
     def run_compiled(self, sample: Any) -> ProfileReport:
         """Profile the compiled single-row pipeline produced by Stripje."""
+        strategy = CompiledProfilingStrategy()
 
         root = ProfileNode(name="compiled_pipeline", kind="callable", method="call")
-        current = sample  # Keep original format for column transformers
-        start_root = perf_counter_ns()
-
-        for name, step in self.pipeline.steps:
-            current = self._profile_compiled_step(step, name, current, root)
-
-        end_root = perf_counter_ns()
-        root.add_event(start_root, end_root)
-        return ProfileReport(root=root, output=current)
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-
-    def _profile_compiled_step(
-        self, step: Any, name: str, data: Any, parent: ProfileNode
-    ) -> Any:
-        """Profile a compiled step, recursing into nested structures."""
-        node = parent.child(
-            name=name, kind=type(step).__name__, method="call"
-        )
-
         start = perf_counter_ns()
-
-        # Handle nested Pipeline
-        if isinstance(step, Pipeline):
-            current = data
-            for sub_name, sub_step in step.steps:
-                current = self._profile_compiled_step(sub_step, sub_name, current, node)
-            result = current
-
-        # Handle ColumnTransformer
-        elif isinstance(step, ColumnTransformer):
-            result = self._profile_compiled_column_transformer(step, data, node)
-
-        # Handle regular transformers/estimators
-        else:
-            handler = get_handler(type(step))
-            if handler is None:
-                handler = create_fallback_handler
-            compiled_fn = handler(step)
-            result = compiled_fn(data)
-            result = self._coerce_single_sample(result)
-
+        output = strategy.profile(self.pipeline, sample, root)
         end = perf_counter_ns()
-        node.add_event(start, end)
+        root.add_event(start, end)
 
-        return result
+        return ProfileReport(root=root, output=output)
 
-    def _extract_columns(self, data: Any, columns: Any) -> Any:
-        """Extract specific columns from data (handles Series, DataFrame, ndarray)."""
-        # Handle pandas Series (single row from DataFrame)
-        if hasattr(data, 'index') and not hasattr(data, 'iloc'):
-            # This is a pandas Series
-            return data[columns]
-
-        # Handle pandas DataFrame
-        if hasattr(data, 'iloc'):
-            return data[columns]
-
-        # Handle numpy array - columns should be indices
-        if isinstance(data, np.ndarray):
-            if isinstance(columns, (list, np.ndarray)):
-                return data[columns] if data.ndim == 1 else data[:, columns]
-            else:
-                return data[columns] if data.ndim == 1 else data[:, columns]
-
-        return data
-
-    def _prepare_data_for_column_transformer(self, data: Any) -> Any:
-        """Convert data to appropriate format for ColumnTransformer profiling.
-
-        Converts pandas Series to single-row DataFrame to ensure consistent
-        column-based access patterns.
-        """
-        is_series = hasattr(data, 'index') and not hasattr(data, 'iloc')
-        if is_series:
-            # Convert Series to single-row DataFrame for ColumnTransformer
-            import pandas as pd
-            return pd.DataFrame([data])
-        return data
-
-    def _extract_and_prepare_column_data(self, data_df: Any, columns: Any) -> Any:
-        """Extract columns from data and prepare single-row format if needed."""
-        col_data = self._extract_columns(data_df, columns)
-        # Extract single row if we have a DataFrame with one row
-        if hasattr(col_data, 'iloc') and len(col_data) == 1:
-            col_data = col_data.iloc[0]
-        return col_data
-
-    def _profile_drop_transformer(
-        self, name: str, columns: Any, parent: ProfileNode
-    ) -> None:
-        """Profile a 'drop' transformer (no-op)."""
-        metadata = {"columns": columns}
-        child = parent.child(name=name, kind="drop", method="skip", metadata=metadata)
-        noop = perf_counter_ns()
-        child.add_event(noop, noop)
-
-    def _profile_passthrough_transformer(
-        self, name: str, columns: Any, data_df: Any, parent: ProfileNode
-    ) -> Any:
-        """Profile a 'passthrough' transformer."""
-        metadata = {"columns": columns}
-        child = parent.child(
-            name=name, kind="passthrough", method="identity", metadata=metadata
-        )
-        start = perf_counter_ns()
-        col_data = self._extract_and_prepare_column_data(data_df, columns)
-        result = self._coerce_single_sample(col_data)
-        end = perf_counter_ns()
-        child.add_event(start, end)
-        return result
-
-    def _profile_pipeline_transformer(
-        self, name: str, trans: Pipeline, columns: Any, data_df: Any, parent: ProfileNode
-    ) -> Any:
-        """Profile a nested Pipeline transformer."""
-        metadata = {"columns": columns}
-        child = parent.child(
-            name=name, kind=type(trans).__name__, method="call", metadata=metadata
-        )
-        start = perf_counter_ns()
-
-        # Extract columns and process through pipeline steps
-        col_data = self._extract_and_prepare_column_data(data_df, columns)
-        current = col_data
-        for sub_name, sub_step in trans.steps:
-            current = self._profile_compiled_step(sub_step, sub_name, current, child)
-
-        result = self._coerce_single_sample(current)
-        end = perf_counter_ns()
-        child.add_event(start, end)
-        return result
-
-    def _profile_regular_transformer(
-        self, name: str, trans: Any, columns: Any, data_df: Any, parent: ProfileNode
-    ) -> Any:
-        """Profile a regular (non-Pipeline) transformer."""
-        metadata = {"columns": columns}
-        child = parent.child(
-            name=name, kind=type(trans).__name__, method="call", metadata=metadata
-        )
-        start = perf_counter_ns()
-
-        # Extract columns and apply transformer
-        col_data = self._extract_and_prepare_column_data(data_df, columns)
-        handler = get_handler(type(trans))
-        if handler is None:
-            handler = create_fallback_handler
-        compiled_fn = handler(trans)
-        result = compiled_fn(self._coerce_single_sample(col_data))
-        result = self._coerce_single_sample(result)
-
-        end = perf_counter_ns()
-        child.add_event(start, end)
-        return result
-
-    def _combine_transformer_results(self, results: list[Any], data: Any) -> Any:
-        """Combine results from multiple transformers into a single array."""
-        if results:
-            combined = np.concatenate([r.ravel() if r.ndim > 1 else r for r in results])
-            return combined
-        return data
-
-    def _profile_compiled_column_transformer(
-        self, transformer: ColumnTransformer, data: Any, parent: ProfileNode
-    ) -> Any:
-        """Profile compiled ColumnTransformer with its sub-transformers."""
-        # Prepare data format for consistent column access
-        data_df = self._prepare_data_for_column_transformer(data)
-        results = []
-
-        for name, trans, columns in transformer.transformers_:
-            if trans == "drop":
-                self._profile_drop_transformer(name, columns, parent)
-                continue
-
-            if trans == "passthrough":
-                result = self._profile_passthrough_transformer(name, columns, data_df, parent)
-                results.append(result)
-                continue
-
-            # Handle sub-pipeline or regular transformer
-            if isinstance(trans, Pipeline):
-                result = self._profile_pipeline_transformer(name, trans, columns, data_df, parent)
-                results.append(result)
-            else:
-                result = self._profile_regular_transformer(name, trans, columns, data_df, parent)
-                results.append(result)
-
-        return self._combine_transformer_results(results, data)
-
-    def _compiled_steps(self) -> list[tuple[str, Callable[[Any], Any]]]:
-        compiled_steps: list[tuple[str, Callable[[Any], Any]]] = []
-        for name, step in self.pipeline.steps:
-            handler = get_handler(type(step))
-            if handler is None:
-                handler = create_fallback_handler
-            compiled_steps.append((name, handler(step)))
-        return compiled_steps
-
-    def _run_steps(
-        self,
-        steps: Iterable[tuple[str, Any]],
-        data: Any,
-        parent: ProfileNode | None,
-        final_method: str,
-        y: Any,
-    ) -> Any:
-        current = data
-        parent_node = parent or ProfileNode(
-            name="pipeline", kind="Pipeline", method=final_method
-        )
-
-        steps_list = list(steps)
-        for idx, (name, step) in enumerate(steps_list):
-            is_last = idx == len(steps_list) - 1
-            method = self._determine_method(step, is_last, final_method)
-            metadata = {"method": method}
-            node = parent_node.child(
-                name=name, kind=type(step).__name__, method=method, metadata=metadata
-            )
-
-            start = perf_counter_ns()
-            if isinstance(step, Pipeline):
-                current = self._run_steps(step.steps, current, node, method, y)
-            elif isinstance(step, ColumnTransformer):
-                current = self._execute_column_transformer(step, current, node, method)
-            else:
-                call_args = (current,) if method != "fit" else (current, y)
-                attr = getattr(step, method)
-                current = attr(*call_args)
-            end = perf_counter_ns()
-            node.add_event(start, end)
-
-        return current
-
-    def _execute_column_transformer(
-        self,
-        transformer: ColumnTransformer,
-        data: Any,
-        node: ProfileNode,
-        method: str,
-    ) -> Any:
-        if method not in {"transform", "fit_transform"}:
-            attr = getattr(transformer, method)
-            return attr(data)
-
-        with ExitStack() as stack:
-            for name, trans, columns in transformer.transformers_:
-                metadata = {"columns": columns}
-                if trans == "drop":
-                    child = node.child(
-                        name=name, kind="drop", method="skip", metadata=metadata
-                    )
-                    if not child.events:
-                        noop = perf_counter_ns()
-                        child.add_event(noop, noop)
-                    continue
-
-                if trans == "passthrough":
-                    child = node.child(
-                        name=name,
-                        kind="passthrough",
-                        method="identity",
-                        metadata=metadata,
-                    )
-                    if not child.events:
-                        noop = perf_counter_ns()
-                        child.add_event(noop, noop)
-                    continue
-
-                child_method = method if hasattr(trans, method) else "transform"
-                child = node.child(
-                    name=name,
-                    kind=type(trans).__name__,
-                    method=child_method,
-                    metadata=metadata,
-                )
-
-                if hasattr(trans, "steps"):
-                    stack.enter_context(MethodTimer(trans, child_method, child))
-                    self._instrument_pipeline_steps(trans, child, child_method, stack)
-                else:
-                    stack.enter_context(MethodTimer(trans, child_method, child))
-
-            attr = getattr(transformer, method)
-            with parallel_backend("threading"):
-                result = attr(data)
-
-        for child in node.children:
-            if child.parent is node and not child.events:
-                noop = perf_counter_ns()
-                child.add_event(noop, noop)
-
-        return result
-
-    def _determine_method(self, step: Any, is_last: bool, final_method: str) -> str:
-        if isinstance(step, Pipeline):
-            return final_method
-
-        if is_last:
-            if final_method == "predict" and hasattr(step, "predict"):
-                return "predict"
-            if final_method == "transform" and hasattr(step, "transform"):
-                return "transform"
-            if hasattr(step, final_method):
-                return final_method
-
-        if hasattr(step, "transform"):
-            return "transform"
-        if hasattr(step, final_method):
-            return final_method
-        if hasattr(step, "predict"):
-            return "predict"
-
-        raise AttributeError(
-            f"Cannot determine method for step {step!r}; expected one of transform/predict/fit."
-        )
-
-    def _coerce_single_sample(self, sample: Any) -> Any:
-        """Return a single sample in a numpy-friendly format for compiled steps."""
-        if isinstance(sample, np.ndarray):
-            return sample
-        if hasattr(sample, "to_numpy"):
-            arr = sample.to_numpy()
-            return arr
-        if isinstance(sample, dict):
-            return np.asarray(list(sample.values()))
-        return np.asarray(sample)
-
-    def _instrument_pipeline_steps(
-        self,
-        pipeline: Any,
-        parent_node: ProfileNode,
-        final_method: str,
-        stack: ExitStack,
-    ) -> None:
-        if not hasattr(pipeline, "steps"):
-            return
-
-        steps_list = list(pipeline.steps)
-        for idx, (name, step) in enumerate(steps_list):
-            method = self._determine_method(
-                step, idx == len(steps_list) - 1, final_method
-            )
-            metadata = {"method": method}
-            step_node = parent_node.child(
-                name=name,
-                kind=type(step).__name__,
-                method=method,
-                metadata=metadata,
-            )
-
-            if isinstance(step, Pipeline):
-                stack.enter_context(MethodTimer(step, method, step_node))
-                self._instrument_pipeline_steps(step, step_node, method, stack)
-            elif isinstance(step, ColumnTransformer):
-                stack.enter_context(MethodTimer(step, method, step_node))
-            else:
-                stack.enter_context(MethodTimer(step, method, step_node))
