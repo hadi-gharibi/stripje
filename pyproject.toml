@@ -178,7 +178,8 @@ exclude_lines = [
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[project.optional-dependencies]
+
+[dependency-groups]
 dev = [
     "pytest>=8.4.2",
     "pytest-cov>=5.0.0",
