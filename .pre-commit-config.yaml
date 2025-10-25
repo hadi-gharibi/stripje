@@ -67,4 +67,4 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-push]
-        args: ["run", "--group", "testing", "pytest"]
+        args: ["run", "--group", "testing", "pytest", "--no-cov"]
