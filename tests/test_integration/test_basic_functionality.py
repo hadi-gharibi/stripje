@@ -27,7 +27,7 @@ def main():
     assert int(original_pred) == int(fast_pred)
 
     print(
-        f"Basic functionality test passed on {os.getenv('RUNNER_OS','unknown')} with Python {sys.version.split()[0]}"
+        f"Basic functionality test passed on {os.getenv('RUNNER_OS', 'unknown')} with Python {sys.version.split()[0]}"
     )
 
 

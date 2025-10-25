@@ -74,9 +74,9 @@ class TestPreprocessingTransformers:
             original_result = scaler.transform([test_row])[0]
             fast_result = fast_scaler(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"StandardScaler mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"StandardScaler mismatch for row {i}"
+            )
 
     def test_minmax_scaler(self, numeric_data):
         """Test MinMaxScaler handler."""
@@ -90,9 +90,9 @@ class TestPreprocessingTransformers:
             original_result = scaler.transform([test_row])[0]
             fast_result = fast_scaler(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"MinMaxScaler mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"MinMaxScaler mismatch for row {i}"
+            )
 
     def test_robust_scaler(self, numeric_data):
         """Test RobustScaler handler."""
@@ -106,9 +106,9 @@ class TestPreprocessingTransformers:
             original_result = scaler.transform([test_row])[0]
             fast_result = fast_scaler(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"RobustScaler mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"RobustScaler mismatch for row {i}"
+            )
 
     def test_maxabs_scaler(self, numeric_data):
         """Test MaxAbsScaler handler."""
@@ -122,9 +122,9 @@ class TestPreprocessingTransformers:
             original_result = scaler.transform([test_row])[0]
             fast_result = fast_scaler(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"MaxAbsScaler mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"MaxAbsScaler mismatch for row {i}"
+            )
 
     @pytest.mark.parametrize("norm", ["l1", "l2", "max"])
     def test_normalizer(self, numeric_data, norm):
@@ -139,9 +139,9 @@ class TestPreprocessingTransformers:
             original_result = normalizer.transform([test_row])[0]
             fast_result = fast_normalizer(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"Normalizer ({norm}) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"Normalizer ({norm}) mismatch for row {i}"
+            )
 
     def test_normalizer_zero_norm(self):
         """Test Normalizer with zero norm (edge case)."""
@@ -169,9 +169,9 @@ class TestPreprocessingTransformers:
             original_result = encoder.transform([test_row])[0]
             fast_result = fast_encoder(test_row)
 
-            assert np.allclose(
-                original_result, fast_result
-            ), f"OneHotEncoder mismatch for row {i}"
+            assert np.allclose(original_result, fast_result), (
+                f"OneHotEncoder mismatch for row {i}"
+            )
 
     def test_onehot_encoder_drop_first(self, categorical_data):
         """Test OneHotEncoder with drop='first'."""
@@ -185,9 +185,9 @@ class TestPreprocessingTransformers:
             original_result = encoder.transform([test_row])[0]
             fast_result = fast_encoder(test_row)
 
-            assert np.allclose(
-                original_result, fast_result
-            ), f"OneHotEncoder (drop=first) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result), (
+                f"OneHotEncoder (drop=first) mismatch for row {i}"
+            )
 
     def test_onehot_encoder_unknown_category(self, categorical_data):
         """Test OneHotEncoder with unknown category."""
@@ -215,9 +215,9 @@ class TestPreprocessingTransformers:
             original_result = encoder.transform([test_row])[0]
             fast_result = fast_encoder(test_row)
 
-            assert np.allclose(
-                original_result, fast_result
-            ), f"OrdinalEncoder mismatch for row {i}"
+            assert np.allclose(original_result, fast_result), (
+                f"OrdinalEncoder mismatch for row {i}"
+            )
 
     def test_ordinal_encoder_unknown_category(self, categorical_data):
         """Test OrdinalEncoder with unknown category."""
@@ -244,9 +244,9 @@ class TestPreprocessingTransformers:
             original_result = encoder.transform([label])[0]
             fast_result = fast_encoder([label])
 
-            assert fast_result == [
-                float(original_result)
-            ], f"LabelEncoder mismatch for label {label}"
+            assert fast_result == [float(original_result)], (
+                f"LabelEncoder mismatch for label {label}"
+            )
 
     def test_label_encoder_single_value(self, label_data):
         """Test LabelEncoder with single value input."""
@@ -283,9 +283,9 @@ class TestPreprocessingTransformers:
             original_result = encoder.transform([label])[0]
             fast_result = fast_encoder([label])
 
-            assert np.allclose(
-                original_result, fast_result
-            ), f"LabelBinarizer mismatch for label {label}"
+            assert np.allclose(original_result, fast_result), (
+                f"LabelBinarizer mismatch for label {label}"
+            )
 
     def test_quantile_transformer_uniform(self, numeric_data):
         """Test QuantileTransformer with uniform output."""
@@ -300,9 +300,9 @@ class TestPreprocessingTransformers:
             fast_result = fast_transformer(test_row)
 
             # Allow some tolerance due to approximation
-            assert np.allclose(
-                original_result, fast_result, rtol=0.1
-            ), f"QuantileTransformer (uniform) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=0.1), (
+                f"QuantileTransformer (uniform) mismatch for row {i}"
+            )
 
     def test_quantile_transformer_normal(self, numeric_data):
         """Test QuantileTransformer with normal output."""
@@ -317,9 +317,9 @@ class TestPreprocessingTransformers:
             fast_result = fast_transformer(test_row)
 
             # Allow larger tolerance due to inverse normal CDF approximation
-            assert np.allclose(
-                original_result, fast_result, rtol=0.3
-            ), f"QuantileTransformer (normal) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=0.3), (
+                f"QuantileTransformer (normal) mismatch for row {i}"
+            )
 
     @pytest.mark.parametrize("method", ["yeo-johnson", "box-cox"])
     def test_power_transformer(self, method):
@@ -340,9 +340,9 @@ class TestPreprocessingTransformers:
             original_result = transformer.transform([test_row])[0]
             fast_result = fast_transformer(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"PowerTransformer ({method}) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"PowerTransformer ({method}) mismatch for row {i}"
+            )
 
     @pytest.mark.parametrize("threshold", [0.0, 0.5, 1.0])
     def test_binarizer(self, numeric_data, threshold):
@@ -357,9 +357,9 @@ class TestPreprocessingTransformers:
             original_result = transformer.transform([test_row])[0]
             fast_result = fast_transformer(test_row)
 
-            assert np.allclose(
-                original_result, fast_result
-            ), f"Binarizer (threshold={threshold}) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result), (
+                f"Binarizer (threshold={threshold}) mismatch for row {i}"
+            )
 
     @pytest.mark.parametrize("encode", ["onehot", "ordinal"])
     def test_kbins_discretizer(self, numeric_data, encode):
@@ -377,9 +377,9 @@ class TestPreprocessingTransformers:
                 original_result = transformer.transform([test_row])[0]
             fast_result = fast_transformer(test_row)
 
-            assert np.allclose(
-                original_result, fast_result
-            ), f"KBinsDiscretizer ({encode}) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result), (
+                f"KBinsDiscretizer ({encode}) mismatch for row {i}"
+            )
 
     # @pytest.mark.parametrize("degree", [2, 3])
     # @pytest.mark.parametrize("include_bias", [True, False])
@@ -432,9 +432,9 @@ class TestPreprocessingTransformers:
             original_result = encoder.transform([test_row])[0]
             fast_result = fast_encoder(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"TargetEncoder mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"TargetEncoder mismatch for row {i}"
+            )
 
     def test_target_encoder_unknown_category(self, categorical_data):
         """Test TargetEncoder with unknown category."""
@@ -451,9 +451,9 @@ class TestPreprocessingTransformers:
         original_result = encoder.transform([test_row])[0]
         fast_result = fast_encoder(test_row)
 
-        assert np.allclose(
-            original_result, fast_result, rtol=1e-10
-        ), "TargetEncoder mismatch for unknown categories"
+        assert np.allclose(original_result, fast_result, rtol=1e-10), (
+            "TargetEncoder mismatch for unknown categories"
+        )
 
 
 if __name__ == "__main__":

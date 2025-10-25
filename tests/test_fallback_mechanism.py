@@ -70,9 +70,9 @@ class TestFallbackMechanism:
         orig_pred = pipeline.predict([test_row])[0]
         fast_pred = fast_predict(test_row)
 
-        assert (
-            orig_pred == fast_pred
-        ), f"Custom transformer fallback failed: {orig_pred} vs {fast_pred}"
+        assert orig_pred == fast_pred, (
+            f"Custom transformer fallback failed: {orig_pred} vs {fast_pred}"
+        )
 
     def test_target_encoder_fallback(self):
         """Test that TargetEncoder falls back to original implementation."""
@@ -105,9 +105,9 @@ class TestFallbackMechanism:
         orig_pred = pipeline.predict([test_row])[0]
         fast_pred = fast_predict(test_row)
 
-        assert (
-            orig_pred == fast_pred
-        ), f"TargetEncoder fallback failed: {orig_pred} vs {fast_pred}"
+        assert orig_pred == fast_pred, (
+            f"TargetEncoder fallback failed: {orig_pred} vs {fast_pred}"
+        )
 
     def test_column_transformer_fallback(self, test_data):
         """Test that fallback works within ColumnTransformer."""
@@ -136,9 +136,9 @@ class TestFallbackMechanism:
         orig_pred = pipeline.predict([test_row])[0]
         fast_pred = fast_predict(test_row)
 
-        assert (
-            orig_pred == fast_pred
-        ), f"ColumnTransformer fallback failed: {orig_pred} vs {fast_pred}"
+        assert orig_pred == fast_pred, (
+            f"ColumnTransformer fallback failed: {orig_pred} vs {fast_pred}"
+        )
 
 
 if __name__ == "__main__":

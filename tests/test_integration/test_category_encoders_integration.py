@@ -63,9 +63,9 @@ class TestCategoryEncodersIntegration:
         original_pred = pipeline.predict(X.iloc[[0]])[0]
         fast_pred = fast_predict(test_row)
 
-        assert (
-            original_pred == fast_pred
-        ), f"Prediction mismatch: original={original_pred}, fast={fast_pred}"
+        assert original_pred == fast_pred, (
+            f"Prediction mismatch: original={original_pred}, fast={fast_pred}"
+        )
 
     def test_high_cardinality_with_unknown_categories(self):
         """
@@ -227,9 +227,9 @@ class TestCategoryEncodersIntegration:
 
         # Allow some tolerance for numerical edge cases in encoding
         match_rate = matches / len(test_indices)
-        assert (
-            match_rate >= 0.90
-        ), f"Match rate too low: {match_rate:.2%} ({matches}/{len(test_indices)})"
+        assert match_rate >= 0.90, (
+            f"Match rate too low: {match_rate:.2%} ({matches}/{len(test_indices)})"
+        )
 
         print(
             f"Prediction match rate: {match_rate:.2%} ({matches}/{len(test_indices)})"
@@ -277,15 +277,14 @@ class TestCategoryEncodersIntegration:
                 matches += 1
             else:
                 print(
-                    f"Mismatch at index {i}: "
-                    f"original={original_pred}, fast={fast_pred}"
+                    f"Mismatch at index {i}: original={original_pred}, fast={fast_pred}"
                 )
 
         # Allow some tolerance
         match_rate = matches / len(test_indices)
-        assert (
-            match_rate >= 0.80
-        ), f"Match rate too low: {match_rate:.2%} ({matches}/{len(test_indices)})"
+        assert match_rate >= 0.80, (
+            f"Match rate too low: {match_rate:.2%} ({matches}/{len(test_indices)})"
+        )
 
     def test_empty_and_null_handling(self):
         """
@@ -326,8 +325,7 @@ class TestCategoryEncodersIntegration:
                 matches += 1
             else:
                 print(
-                    f"Mismatch at index {i}: "
-                    f"original={original_pred}, fast={fast_pred}"
+                    f"Mismatch at index {i}: original={original_pred}, fast={fast_pred}"
                 )
 
         # Should match at least 80% of the time
@@ -359,9 +357,9 @@ def test_category_encoders_module_available():
     ]
 
     for encoder_name in required_encoders:
-        assert hasattr(
-            category_encoders, encoder_name
-        ), f"Encoder {encoder_name} not found in category_encoders"
+        assert hasattr(category_encoders, encoder_name), (
+            f"Encoder {encoder_name} not found in category_encoders"
+        )
 
     print(f"✓ All required encoders available: {', '.join(required_encoders)}")
 

@@ -64,9 +64,9 @@ class TestPipelineCompiler:
             original_pred = pipeline.predict([test_row])[0]
             fast_pred = fast_predict(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"Simple pipeline mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert original_pred == fast_pred, (
+                f"Simple pipeline mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     def test_preprocessing_only_pipeline(self, simple_numeric_data):
         """Test pipeline with only preprocessing steps."""
@@ -84,9 +84,9 @@ class TestPipelineCompiler:
             original_result = pipeline.transform([test_row])[0]
             fast_result = fast_transform(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"Preprocessing pipeline mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"Preprocessing pipeline mismatch for row {i}"
+            )
 
     def test_multi_step_preprocessing_pipeline(self, simple_numeric_data):
         """Test pipeline with multiple preprocessing steps."""
@@ -108,9 +108,9 @@ class TestPipelineCompiler:
             original_result = pipeline.transform([test_row])[0]
             fast_result = fast_transform(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"Multi-step preprocessing pipeline mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"Multi-step preprocessing pipeline mismatch for row {i}"
+            )
 
     def test_column_transformer_numeric_only(self, simple_numeric_data):
         """Test ColumnTransformer with numeric features only."""
@@ -143,9 +143,9 @@ class TestPipelineCompiler:
             original_pred = pipeline.predict(df.iloc[[i]])[0]
             fast_pred = fast_predict(test_row_dict)
 
-            assert (
-                original_pred == fast_pred
-            ), f"ColumnTransformer (numeric) mismatch for row {i}"
+            assert original_pred == fast_pred, (
+                f"ColumnTransformer (numeric) mismatch for row {i}"
+            )
 
     def test_column_transformer_mixed_types(self, mixed_data):
         """Test ColumnTransformer with mixed data types."""
@@ -177,9 +177,9 @@ class TestPipelineCompiler:
             original_pred = pipeline.predict(df.iloc[[i]])[0]
             fast_pred = fast_predict(test_row_dict)
 
-            assert (
-                original_pred == fast_pred
-            ), f"ColumnTransformer (mixed) mismatch for row {i}"
+            assert original_pred == fast_pred, (
+                f"ColumnTransformer (mixed) mismatch for row {i}"
+            )
 
     def test_column_transformer_passthrough(self, simple_numeric_data):
         """Test ColumnTransformer with passthrough."""
@@ -246,9 +246,9 @@ class TestPipelineCompiler:
             original_pred = pipeline.predict([test_row])[0]
             fast_pred = fast_predict(test_row)
 
-            assert np.isclose(
-                original_pred, fast_pred, rtol=1e-10
-            ), f"Regression pipeline mismatch for row {i}"
+            assert np.isclose(original_pred, fast_pred, rtol=1e-10), (
+                f"Regression pipeline mismatch for row {i}"
+            )
 
     def test_unsupported_transformer_fallback(self):
         """Test that unsupported transformers use fallback mechanism."""
@@ -285,12 +285,12 @@ class TestPipelineCompiler:
         orig_result = pipeline.transform([test_row])[0]
         fast_result = fast_pipeline(test_row)
 
-        assert len(orig_result) == len(
-            fast_result
-        ), "Fallback mechanism should preserve output shape"
-        assert np.allclose(
-            orig_result, fast_result
-        ), "Fallback mechanism should produce same results"
+        assert len(orig_result) == len(fast_result), (
+            "Fallback mechanism should preserve output shape"
+        )
+        assert np.allclose(orig_result, fast_result), (
+            "Fallback mechanism should produce same results"
+        )
 
     def test_pipeline_with_different_input_formats(self, simple_numeric_data):
         """Test pipeline handles different input formats correctly."""
@@ -361,9 +361,9 @@ class TestPipelineCompiler:
         ]
 
         for transformer in expected_transformers:
-            assert (
-                transformer in transformer_names
-            ), f"{transformer} should be supported"
+            assert transformer in transformer_names, (
+                f"{transformer} should be supported"
+            )
 
     def test_column_transformer_handler_directly(self, mixed_data):
         """Test ColumnTransformer handler directly."""

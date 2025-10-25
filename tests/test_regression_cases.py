@@ -47,9 +47,9 @@ class TestTransformerRegressionCases:
             fast_result = fast_func(test_row)
 
             # Use the same tolerance as the benchmark
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-3, atol=1e-3
-            ), f"QuantileTransformer normal mismatch for sample {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-3, atol=1e-3), (
+                f"QuantileTransformer normal mismatch for sample {i}"
+            )
 
     def test_quantile_transformer_uniform_accuracy(self, benchmark_data):
         """Test QuantileTransformer with uniform distribution for accuracy."""
@@ -73,9 +73,9 @@ class TestTransformerRegressionCases:
             fast_result = fast_func(test_row)
 
             # Uniform should be more precise
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10, atol=1e-10
-            ), f"QuantileTransformer uniform mismatch for sample {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10, atol=1e-10), (
+                f"QuantileTransformer uniform mismatch for sample {i}"
+            )
 
     def test_kbins_discretizer_onehot_sparse_handling(self, benchmark_data):
         """Test KBinsDiscretizer with onehot encoding handles sparse matrices correctly."""
@@ -99,14 +99,14 @@ class TestTransformerRegressionCases:
 
             fast_result = fast_func(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10, atol=1e-10
-            ), f"KBinsDiscretizer onehot mismatch for sample {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10, atol=1e-10), (
+                f"KBinsDiscretizer onehot mismatch for sample {i}"
+            )
 
             # Verify sparse matrix was handled correctly
-            assert hasattr(
-                original_result_sparse, "toarray"
-            ), "Should return sparse matrix"
+            assert hasattr(original_result_sparse, "toarray"), (
+                "Should return sparse matrix"
+            )
 
     def test_kbins_discretizer_ordinal_accuracy(self, benchmark_data):
         """Test KBinsDiscretizer with ordinal encoding for accuracy."""
@@ -127,9 +127,9 @@ class TestTransformerRegressionCases:
             original_result = pipeline.transform([test_row])[0]
             fast_result = fast_func(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10, atol=1e-10
-            ), f"KBinsDiscretizer ordinal mismatch for sample {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10, atol=1e-10), (
+                f"KBinsDiscretizer ordinal mismatch for sample {i}"
+            )
 
     def test_inverse_normal_cdf_edge_cases(self):
         """Test inverse normal CDF implementation with edge cases."""
@@ -163,9 +163,9 @@ class TestTransformerRegressionCases:
             original_result = transformer.transform([test_case])[0]
 
             # Allow reasonable tolerance for approximation
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-3, atol=1e-3
-            ), f"Inverse normal CDF failed for input {test_case}"
+            assert np.allclose(original_result, fast_result, rtol=1e-3, atol=1e-3), (
+                f"Inverse normal CDF failed for input {test_case}"
+            )
 
     def test_benchmark_verification_logic(self, benchmark_data):
         """Test the benchmark verification logic works correctly."""

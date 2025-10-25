@@ -66,7 +66,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
             # Convert to dict if it's a list/array with column names
             x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
             elif hasattr(step, "cols") and step.cols:
                 # Assume x is ordered according to the columns used during fit
                 x_dict = {col: x[i] for i, col in enumerate(step.cols)}
@@ -130,7 +130,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
         def transform_one(x: Any) -> Any:
             x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
             elif hasattr(step, "cols") and step.cols:
                 x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
@@ -185,7 +185,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
         def transform_one(x: Any) -> Any:
             x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
             elif hasattr(step, "cols") and step.cols:
                 x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
@@ -225,7 +225,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
         def transform_one(x: Any) -> Any:
             x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
             elif hasattr(step, "cols") and step.cols:
                 x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
@@ -268,7 +268,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
         def transform_one(x: Any) -> Any:
             x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
             elif hasattr(step, "cols") and step.cols:
                 x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
@@ -332,7 +332,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
         def transform_one(x: Any) -> Any:
             x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
             elif hasattr(step, "cols") and step.cols:
                 x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
@@ -378,7 +378,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
         def transform_one(x: Any) -> Any:
             x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
             elif hasattr(step, "cols") and step.cols:
                 x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:

@@ -65,12 +65,12 @@ class TestCategoryEncodersPreserveColumns:
 
         # Check that original encoder preserves numeric columns
         X_transformed = encoder.transform(self.X)
-        assert (
-            "num_feature_1" in X_transformed.columns
-        ), f"{encoder_class.__name__} should preserve num_feature_1"
-        assert (
-            "num_feature_2" in X_transformed.columns
-        ), f"{encoder_class.__name__} should preserve num_feature_2"
+        assert "num_feature_1" in X_transformed.columns, (
+            f"{encoder_class.__name__} should preserve num_feature_1"
+        )
+        assert "num_feature_2" in X_transformed.columns, (
+            f"{encoder_class.__name__} should preserve num_feature_2"
+        )
 
         # Now test with pipeline and classifier
         if encoder_class in [

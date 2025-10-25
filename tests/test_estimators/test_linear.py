@@ -79,9 +79,9 @@ class TestLinearEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"LogisticRegression (binary) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert original_pred == fast_pred, (
+                f"LogisticRegression (binary) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     def test_logistic_regression_multiclass(self, multiclass_classification_data):
         """Test LogisticRegression handler for multiclass classification."""
@@ -97,9 +97,9 @@ class TestLinearEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"LogisticRegression (multiclass) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert original_pred == fast_pred, (
+                f"LogisticRegression (multiclass) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     def test_logistic_regression_probability_threshold(
         self, binary_classification_data
@@ -139,9 +139,9 @@ class TestLinearEstimators:
             original_pred = reg.predict([test_row])[0]
             fast_pred = fast_reg(test_row)
 
-            assert np.isclose(
-                original_pred, fast_pred, rtol=1e-10
-            ), f"LinearRegression mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert np.isclose(original_pred, fast_pred, rtol=1e-10), (
+                f"LinearRegression mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     @pytest.mark.parametrize("alpha", [0.1, 1.0, 10.0])
     def test_ridge_regression(self, regression_data, alpha):
@@ -158,9 +158,9 @@ class TestLinearEstimators:
             original_pred = reg.predict([test_row])[0]
             fast_pred = fast_reg(test_row)
 
-            assert np.isclose(
-                original_pred, fast_pred, rtol=1e-10
-            ), f"Ridge (alpha={alpha}) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert np.isclose(original_pred, fast_pred, rtol=1e-10), (
+                f"Ridge (alpha={alpha}) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     def test_ridge_classifier_binary(self, binary_classification_data):
         """Test RidgeClassifier handler for binary classification."""
@@ -176,9 +176,9 @@ class TestLinearEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"RidgeClassifier (binary) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert original_pred == fast_pred, (
+                f"RidgeClassifier (binary) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     def test_ridge_classifier_multiclass(self, multiclass_classification_data):
         """Test RidgeClassifier handler for multiclass classification."""
@@ -194,9 +194,9 @@ class TestLinearEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"RidgeClassifier (multiclass) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert original_pred == fast_pred, (
+                f"RidgeClassifier (multiclass) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     @pytest.mark.parametrize("alpha", [0.1, 1.0, 10.0])
     def test_lasso_regression(self, regression_data, alpha):
@@ -213,9 +213,9 @@ class TestLinearEstimators:
             original_pred = reg.predict([test_row])[0]
             fast_pred = fast_reg(test_row)
 
-            assert np.isclose(
-                original_pred, fast_pred, rtol=1e-10
-            ), f"Lasso (alpha={alpha}) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert np.isclose(original_pred, fast_pred, rtol=1e-10), (
+                f"Lasso (alpha={alpha}) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     @pytest.mark.parametrize("alpha", [0.1, 1.0])
     @pytest.mark.parametrize("l1_ratio", [0.15, 0.5, 0.85])
@@ -233,9 +233,9 @@ class TestLinearEstimators:
             original_pred = reg.predict([test_row])[0]
             fast_pred = fast_reg(test_row)
 
-            assert np.isclose(
-                original_pred, fast_pred, rtol=1e-10
-            ), f"ElasticNet (alpha={alpha}, l1_ratio={l1_ratio}) mismatch for row {i}"
+            assert np.isclose(original_pred, fast_pred, rtol=1e-10), (
+                f"ElasticNet (alpha={alpha}, l1_ratio={l1_ratio}) mismatch for row {i}"
+            )
 
     def test_sgd_classifier_binary(self, binary_classification_data):
         """Test SGDClassifier handler for binary classification."""
@@ -251,9 +251,9 @@ class TestLinearEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"SGDClassifier (binary) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert original_pred == fast_pred, (
+                f"SGDClassifier (binary) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     def test_sgd_classifier_multiclass(self, multiclass_classification_data):
         """Test SGDClassifier handler for multiclass classification."""
@@ -269,9 +269,9 @@ class TestLinearEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"SGDClassifier (multiclass) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert original_pred == fast_pred, (
+                f"SGDClassifier (multiclass) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     def test_sgd_regressor(self, regression_data):
         """Test SGDRegressor handler."""
@@ -287,9 +287,9 @@ class TestLinearEstimators:
             original_pred = reg.predict([test_row])[0]
             fast_pred = fast_reg(test_row)
 
-            assert np.isclose(
-                original_pred, fast_pred, rtol=1e-10
-            ), f"SGDRegressor mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert np.isclose(original_pred, fast_pred, rtol=1e-10), (
+                f"SGDRegressor mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     def test_linear_models_with_intercept_false(self, regression_data):
         """Test linear models with fit_intercept=False."""
@@ -364,9 +364,9 @@ class TestLinearEstimators:
         assert np.isclose(original_pred, fast_pred, rtol=1e-10)
 
         # Verify some coefficients are actually zero
-        assert (
-            np.sum(np.abs(reg.coef_) < 1e-10) > 0
-        ), "Lasso should produce some zero coefficients"
+        assert np.sum(np.abs(reg.coef_) < 1e-10) > 0, (
+            "Lasso should produce some zero coefficients"
+        )
 
 
 if __name__ == "__main__":

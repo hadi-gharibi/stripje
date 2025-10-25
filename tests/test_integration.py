@@ -59,9 +59,9 @@ class TestIntegration:
             fast_pred = fast_predict(test_row)
 
             # Verify they match
-            assert (
-                original_pred == fast_pred
-            ), f"Prediction mismatch at sample {i}: {original_pred} vs {fast_pred}"
+            assert original_pred == fast_pred, (
+                f"Prediction mismatch at sample {i}: {original_pred} vs {fast_pred}"
+            )
 
             # Check against true label
             if original_pred == y_test[i]:
@@ -108,9 +108,9 @@ class TestIntegration:
             fast_pred = fast_predict(test_row)
 
             # Verify predictions match
-            assert np.isclose(
-                original_pred, fast_pred, rtol=1e-10
-            ), f"Regression prediction mismatch at sample {i}"
+            assert np.isclose(original_pred, fast_pred, rtol=1e-10), (
+                f"Regression prediction mismatch at sample {i}"
+            )
 
             mse_original += (original_pred - true_value) ** 2
             mse_fast += (fast_pred - true_value) ** 2
@@ -180,9 +180,9 @@ class TestIntegration:
             original_pred = pipeline.predict(X_test.iloc[[i]])[0]
             fast_pred = fast_predict(test_row_dict)
 
-            assert (
-                original_pred == fast_pred
-            ), f"Mixed data prediction mismatch at sample {i}"
+            assert original_pred == fast_pred, (
+                f"Mixed data prediction mismatch at sample {i}"
+            )
 
         print("Mixed data types workflow completed successfully")
 
@@ -326,9 +326,9 @@ class TestIntegration:
             fast_pred = fast_predict(customer_data)
 
             # Verify predictions match
-            assert (
-                original_pred == fast_pred
-            ), f"Customer prediction mismatch for customer {i}"
+            assert original_pred == fast_pred, (
+                f"Customer prediction mismatch for customer {i}"
+            )
 
             if original_pred == true_label:
                 correct_predictions += 1

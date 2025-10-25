@@ -117,9 +117,9 @@ class TestEnsembleEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"RandomForestClassifier with {n_estimators} estimators failed"
+            assert original_pred == fast_pred, (
+                f"RandomForestClassifier with {n_estimators} estimators failed"
+            )
 
     def test_random_forest_regressor(self, regression_data):
         """Test RandomForestRegressor handler."""
@@ -249,9 +249,9 @@ class TestEnsembleEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"GradientBoostingClassifier with learning_rate={learning_rate} failed"
+            assert original_pred == fast_pred, (
+                f"GradientBoostingClassifier with learning_rate={learning_rate} failed"
+            )
 
     def test_gradient_boosting_regressor(self, regression_data):
         """Test GradientBoostingRegressor handler."""
@@ -292,9 +292,9 @@ class TestEnsembleEstimators:
             original_pred = reg.predict([test_row])[0]
             fast_pred = fast_reg(test_row)
 
-            assert np.isclose(
-                original_pred, fast_pred, rtol=1e-10
-            ), f"GradientBoostingRegressor with learning_rate={learning_rate} failed"
+            assert np.isclose(original_pred, fast_pred, rtol=1e-10), (
+                f"GradientBoostingRegressor with learning_rate={learning_rate} failed"
+            )
 
     # Edge Case and Performance Tests
     def test_ensemble_models_with_small_datasets(self):
@@ -413,9 +413,9 @@ class TestEnsembleEstimators:
         predictions = [fast_reg(test_row) for _ in range(5)]
 
         # All predictions should be identical
-        assert all(
-            np.isclose(p, predictions[0], rtol=1e-15) for p in predictions
-        ), "RandomForestRegressor should produce consistent predictions"
+        assert all(np.isclose(p, predictions[0], rtol=1e-15) for p in predictions), (
+            "RandomForestRegressor should produce consistent predictions"
+        )
 
         # Should match original prediction
         original_pred = reg.predict([test_row])[0]

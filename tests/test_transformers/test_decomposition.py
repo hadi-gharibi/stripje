@@ -51,9 +51,9 @@ class TestDecompositionTransformers:
             original_result = pca.transform([test_row])[0]
             fast_result = fast_pca(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"PCA ({n_components} components) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"PCA ({n_components} components) mismatch for row {i}"
+            )
 
     def test_pca_full_components(self, numeric_data):
         """Test PCA with all components."""
@@ -84,9 +84,9 @@ class TestDecompositionTransformers:
             original_result = svd.transform([test_row])[0]
             fast_result = fast_svd(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"TruncatedSVD ({n_components} components) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"TruncatedSVD ({n_components} components) mismatch for row {i}"
+            )
 
     def test_truncated_svd_single_component(self, numeric_data):
         """Test TruncatedSVD with single component."""
@@ -116,9 +116,9 @@ class TestDecompositionTransformers:
             original_result = ica.transform([test_row])[0]
             fast_result = fast_ica(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"FastICA ({n_components} components) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"FastICA ({n_components} components) mismatch for row {i}"
+            )
 
     def test_fast_ica_whiten_false(self, regression_data):
         """Test FastICA with whiten=False."""
@@ -146,9 +146,9 @@ class TestDecompositionTransformers:
             original_result = fa.transform([test_row])[0]
             fast_result = fast_fa(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"FactorAnalysis ({n_components} components) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"FactorAnalysis ({n_components} components) mismatch for row {i}"
+            )
 
     def test_factor_analysis_single_component(self, regression_data):
         """Test FactorAnalysis with single component."""

@@ -60,9 +60,9 @@ class TestNaiveBayesEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"GaussianNB (binary) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert original_pred == fast_pred, (
+                f"GaussianNB (binary) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
     def test_gaussian_nb_multiclass(self, multiclass_classification_data):
         """Test GaussianNB handler for multiclass classification."""
@@ -78,9 +78,9 @@ class TestNaiveBayesEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"GaussianNB (multiclass) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            assert original_pred == fast_pred, (
+                f"GaussianNB (multiclass) mismatch for row {i}: {original_pred} vs {fast_pred}"
+            )
 
 
 if __name__ == "__main__":

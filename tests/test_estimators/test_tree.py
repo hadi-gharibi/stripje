@@ -52,9 +52,9 @@ class TestTreeEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"DecisionTreeClassifier (max_depth={max_depth}) mismatch for row {i}"
+            assert original_pred == fast_pred, (
+                f"DecisionTreeClassifier (max_depth={max_depth}) mismatch for row {i}"
+            )
 
     @pytest.mark.parametrize("max_depth", [None, 3, 5, 10])
     def test_decision_tree_regressor(self, regression_data, max_depth):
@@ -71,9 +71,9 @@ class TestTreeEstimators:
             original_pred = reg.predict([test_row])[0]
             fast_pred = fast_reg(test_row)
 
-            assert np.isclose(
-                original_pred, fast_pred, rtol=1e-10
-            ), f"DecisionTreeRegressor (max_depth={max_depth}) mismatch for row {i}"
+            assert np.isclose(original_pred, fast_pred, rtol=1e-10), (
+                f"DecisionTreeRegressor (max_depth={max_depth}) mismatch for row {i}"
+            )
 
     def test_decision_tree_classifier_binary(self):
         """Test DecisionTreeClassifier with binary classification."""
@@ -161,9 +161,9 @@ class TestTreeEstimators:
             original_pred = clf.predict([test_row])[0]
             fast_pred = fast_clf(test_row)
 
-            assert (
-                original_pred == fast_pred
-            ), f"Mismatch with min_samples_split {min_samples}"
+            assert original_pred == fast_pred, (
+                f"Mismatch with min_samples_split {min_samples}"
+            )
 
     def test_tree_traversal_consistency(self, classification_data):
         """Test that tree traversal is consistent across multiple calls."""

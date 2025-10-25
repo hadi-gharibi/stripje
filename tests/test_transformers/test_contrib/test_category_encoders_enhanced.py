@@ -427,12 +427,12 @@ class TestCategoryEncodersRobustness:
 
         for encoder_class in encoders_to_check:
             handler = get_handler(encoder_class)
-            assert (
-                handler is not None
-            ), f"Handler not registered for {encoder_class.__name__}"
-            assert callable(
-                handler
-            ), f"Handler for {encoder_class.__name__} is not callable"
+            assert handler is not None, (
+                f"Handler not registered for {encoder_class.__name__}"
+            )
+            assert callable(handler), (
+                f"Handler for {encoder_class.__name__} is not callable"
+            )
 
     @pytest.mark.skipif(
         not CATEGORY_ENCODERS_AVAILABLE, reason="category_encoders not available"
@@ -458,9 +458,9 @@ class TestCategoryEncodersRobustness:
         try:
             result = compiled_func([])  # Too few inputs
             # If no error, the result should be empty or default
-            assert len(result) == 0 or all(
-                x == -1 for x in result
-            ), "Empty input should produce empty or default result"
+            assert len(result) == 0 or all(x == -1 for x in result), (
+                "Empty input should produce empty or default result"
+            )
         except (IndexError, KeyError, ValueError):
             # This is also acceptable behavior
             pass

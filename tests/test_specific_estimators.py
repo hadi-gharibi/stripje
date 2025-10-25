@@ -50,9 +50,9 @@ class TestSpecificEstimators:
         orig_pred = pipeline.predict([test_row])[0]
         fast_pred = fast_predict(test_row)
 
-        assert (
-            orig_pred == fast_pred
-        ), f"GaussianNB predictions don't match: {orig_pred} vs {fast_pred}"
+        assert orig_pred == fast_pred, (
+            f"GaussianNB predictions don't match: {orig_pred} vs {fast_pred}"
+        )
 
     def test_linear_svc_support(self, classification_data):
         """Test that LinearSVC is properly supported."""
@@ -70,9 +70,9 @@ class TestSpecificEstimators:
         orig_pred = pipeline.predict([test_row])[0]
         fast_pred = fast_predict(test_row)
 
-        assert (
-            orig_pred == fast_pred
-        ), f"LinearSVC predictions don't match: {orig_pred} vs {fast_pred}"
+        assert orig_pred == fast_pred, (
+            f"LinearSVC predictions don't match: {orig_pred} vs {fast_pred}"
+        )
 
     def test_linear_svr_support(self, regression_data):
         """Test that LinearSVR is properly supported."""
@@ -90,9 +90,9 @@ class TestSpecificEstimators:
         orig_pred = pipeline.predict([test_row])[0]
         fast_pred = fast_predict(test_row)
 
-        assert np.allclose(
-            [orig_pred], [fast_pred], rtol=1e-10
-        ), f"LinearSVR predictions don't match: {orig_pred} vs {fast_pred}"
+        assert np.allclose([orig_pred], [fast_pred], rtol=1e-10), (
+            f"LinearSVR predictions don't match: {orig_pred} vs {fast_pred}"
+        )
 
     def test_select_from_model_support(self, classification_data):
         """Test that SelectFromModel works properly."""
@@ -110,12 +110,12 @@ class TestSpecificEstimators:
         orig_result = selector.transform([test_row])[0]
         fast_result = fast_transform(test_row)
 
-        assert (
-            len(orig_result) == len(fast_result)
-        ), f"SelectFromModel output shapes don't match: {len(orig_result)} vs {len(fast_result)}"
-        assert np.allclose(
-            orig_result, fast_result
-        ), "SelectFromModel transformations don't match"
+        assert len(orig_result) == len(fast_result), (
+            f"SelectFromModel output shapes don't match: {len(orig_result)} vs {len(fast_result)}"
+        )
+        assert np.allclose(orig_result, fast_result), (
+            "SelectFromModel transformations don't match"
+        )
 
     def test_label_encoder_basic(self):
         """Test basic LabelEncoder functionality (not in pipeline context)."""

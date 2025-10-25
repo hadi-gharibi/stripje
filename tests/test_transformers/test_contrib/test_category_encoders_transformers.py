@@ -435,9 +435,9 @@ class TestCategoryEncodersTransformers:
 
             # Get handler
             handler = get_handler(type(encoder))
-            assert (
-                handler is not None
-            ), f"Handler should be registered for {encoder_name}"
+            assert handler is not None, (
+                f"Handler should be registered for {encoder_name}"
+            )
 
             compiled_func = handler(encoder)
 
@@ -458,9 +458,9 @@ class TestCategoryEncodersTransformers:
                 our_result = compiled_func(test_row)
 
                 # Compare
-                assert len(our_result) == len(
-                    expected
-                ), f"{encoder_name}: Length mismatch for {test_row}"
+                assert len(our_result) == len(expected), (
+                    f"{encoder_name}: Length mismatch for {test_row}"
+                )
                 np.testing.assert_allclose(
                     our_result,
                     expected,
@@ -605,12 +605,14 @@ def test_category_encoders_not_available():
         importlib.reload(category_encoders_transformers)
 
         # When category_encoders is not available, __all__ should be empty
-        assert (
-            category_encoders_transformers.__all__ == []
-        ), f"Expected empty __all__ when category_encoders not available, got {category_encoders_transformers.__all__}"
+        assert category_encoders_transformers.__all__ == [], (
+            f"Expected empty __all__ when category_encoders not available, got {category_encoders_transformers.__all__}"
+        )
 
         # Also test that CATEGORY_ENCODERS_AVAILABLE is False
-        assert not category_encoders_transformers.CATEGORY_ENCODERS_AVAILABLE, "CATEGORY_ENCODERS_AVAILABLE should be False when category_encoders not available"
+        assert not category_encoders_transformers.CATEGORY_ENCODERS_AVAILABLE, (
+            "CATEGORY_ENCODERS_AVAILABLE should be False when category_encoders not available"
+        )
 
     finally:
         # Restore the original import function

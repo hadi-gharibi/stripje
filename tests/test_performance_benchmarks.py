@@ -303,9 +303,9 @@ class TestPerformanceBenchmarks:
             predictions_by_input[input_idx].append(prediction)
 
         for input_idx, predictions in predictions_by_input.items():
-            assert (
-                len(set(predictions)) == 1
-            ), f"Inconsistent predictions for input {input_idx}"
+            assert len(set(predictions)) == 1, (
+                f"Inconsistent predictions for input {input_idx}"
+            )
 
 
 if __name__ == "__main__":

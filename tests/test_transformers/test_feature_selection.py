@@ -77,12 +77,12 @@ class TestFeatureSelectionTransformers:
             original_result = selector.transform([test_row])[0]
             fast_result = fast_selector(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"SelectKBest (k={k}) mismatch for row {i}"
-            assert (
-                len(fast_result) == k
-            ), f"Expected {k} features, got {len(fast_result)}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"SelectKBest (k={k}) mismatch for row {i}"
+            )
+            assert len(fast_result) == k, (
+                f"Expected {k} features, got {len(fast_result)}"
+            )
 
     def test_select_k_best_edge_cases(self, classification_data):
         """Test SelectKBest edge cases."""
@@ -126,9 +126,9 @@ class TestFeatureSelectionTransformers:
             original_result = selector.transform([test_row])[0]
             fast_result = fast_selector(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"SelectPercentile ({percentile}%) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"SelectPercentile ({percentile}%) mismatch for row {i}"
+            )
 
     @pytest.mark.parametrize("threshold", [0.0, 0.01, 0.1, 1.0])
     def test_variance_threshold(self, high_variance_data, threshold):
@@ -145,9 +145,9 @@ class TestFeatureSelectionTransformers:
             original_result = selector.transform([test_row])[0]
             fast_result = fast_selector(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"VarianceThreshold (threshold={threshold}) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"VarianceThreshold (threshold={threshold}) mismatch for row {i}"
+            )
 
     def test_variance_threshold_removes_zero_variance(self, high_variance_data):
         """Test that VarianceThreshold removes zero variance features."""
@@ -179,9 +179,9 @@ class TestFeatureSelectionTransformers:
             original_result = selector.transform([test_row])[0]
             fast_result = fast_selector(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"SelectFromModel (RandomForest) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"SelectFromModel (RandomForest) mismatch for row {i}"
+            )
 
     def test_select_from_model_logistic_regression(self, classification_data):
         """Test SelectFromModel with LogisticRegression."""
@@ -215,9 +215,9 @@ class TestFeatureSelectionTransformers:
             original_result = selector.transform([test_row])[0]
             fast_result = fast_selector(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"RFE ({n_features_to_select} features) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"RFE ({n_features_to_select} features) mismatch for row {i}"
+            )
             assert len(fast_result) == n_features_to_select
 
     @pytest.mark.parametrize("alpha", [0.01, 0.05, 0.1])
@@ -235,9 +235,9 @@ class TestFeatureSelectionTransformers:
             original_result = selector.transform([test_row])[0]
             fast_result = fast_selector(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"SelectFdr (alpha={alpha}) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"SelectFdr (alpha={alpha}) mismatch for row {i}"
+            )
 
     @pytest.mark.parametrize("alpha", [0.01, 0.05, 0.1])
     def test_select_fpr(self, classification_data, alpha):
@@ -254,9 +254,9 @@ class TestFeatureSelectionTransformers:
             original_result = selector.transform([test_row])[0]
             fast_result = fast_selector(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"SelectFpr (alpha={alpha}) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"SelectFpr (alpha={alpha}) mismatch for row {i}"
+            )
 
     @pytest.mark.parametrize("alpha", [0.01, 0.05, 0.1])
     def test_select_fwe(self, classification_data, alpha):
@@ -273,9 +273,9 @@ class TestFeatureSelectionTransformers:
             original_result = selector.transform([test_row])[0]
             fast_result = fast_selector(test_row)
 
-            assert np.allclose(
-                original_result, fast_result, rtol=1e-10
-            ), f"SelectFwe (alpha={alpha}) mismatch for row {i}"
+            assert np.allclose(original_result, fast_result, rtol=1e-10), (
+                f"SelectFwe (alpha={alpha}) mismatch for row {i}"
+            )
 
     def test_feature_selection_consistency(self, classification_data):
         """Test that feature selection is consistent across multiple calls."""
@@ -353,12 +353,12 @@ class TestFeatureSelectionTransformers:
         original_result = selector.transform([test_row])[0]
         fast_result = fast_selector(test_row)
 
-        assert (
-            len(original_result) == len(fast_result)
-        ), f"SelectFromModel output shapes don't match: {len(original_result)} vs {len(fast_result)}"
-        assert np.allclose(
-            original_result, fast_result, rtol=1e-10
-        ), "SelectFromModel transformations don't match"
+        assert len(original_result) == len(fast_result), (
+            f"SelectFromModel output shapes don't match: {len(original_result)} vs {len(fast_result)}"
+        )
+        assert np.allclose(original_result, fast_result, rtol=1e-10), (
+            "SelectFromModel transformations don't match"
+        )
 
 
 if __name__ == "__main__":
