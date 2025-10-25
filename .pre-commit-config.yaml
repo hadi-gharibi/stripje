@@ -42,6 +42,8 @@ repos:
       - id: mypy
         additional_dependencies:
           - types-requests
+          - numpy
+          - scikit-learn
         args: [--show-error-codes]
         files: ^src/stripje/
         stages: [pre-push]
