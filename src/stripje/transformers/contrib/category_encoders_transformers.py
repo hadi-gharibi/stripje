@@ -58,6 +58,9 @@ if CATEGORY_ENCODERS_AVAILABLE:
         """Handle BinaryEncoder for single-row input."""
         # Get the mapping information
         mapping = step.mapping
+        
+        # Get list of columns that are encoded
+        encoded_cols = [col_mapping["col"] for col_mapping in mapping]
 
         def transform_one(x: Any) -> Any:
             # Convert to dict if it's a list/array with column names
@@ -108,6 +111,12 @@ if CATEGORY_ENCODERS_AVAILABLE:
                 else:
                     # Column not found, use default encoding
                     result.extend([0] * len(mapping_df.columns))
+
+            # Add non-encoded columns (numeric features, etc.)
+            # BinaryEncoder preserves columns that aren't specified in cols parameter
+            for col, value in x_dict.items():
+                if col not in encoded_cols:
+                    result.append(value)
 
             return result
 
@@ -209,6 +218,9 @@ if CATEGORY_ENCODERS_AVAILABLE:
     def handle_hashing_encoder(step: Any) -> Callable[[Any], Any]:
         """Handle HashingEncoder for single-row input."""
         import hashlib
+        
+        # Get list of columns to hash
+        cols_to_hash = step.cols if hasattr(step, "cols") and step.cols else None
 
         def transform_one(x: Any) -> Any:
             if isinstance(x, (list, np.ndarray)):
@@ -223,8 +235,8 @@ if CATEGORY_ENCODERS_AVAILABLE:
 
             # Hash each categorical column
             cols_to_process = (
-                step.cols
-                if hasattr(step, "cols") and step.cols
+                cols_to_hash
+                if cols_to_hash is not None
                 else list(x_dict.keys())
             )
 
@@ -238,6 +250,13 @@ if CATEGORY_ENCODERS_AVAILABLE:
                     )  # nosec
                     idx = hash_value % step.n_components
                     result[idx] += 1.0
+
+            # Add non-hashed columns (numeric features, etc.)
+            # HashingEncoder preserves columns that aren't specified in cols parameter
+            if cols_to_hash is not None:
+                for col, value in x_dict.items():
+                    if col not in cols_to_hash:
+                        result.append(value)
 
             return result
 
