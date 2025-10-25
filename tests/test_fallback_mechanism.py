@@ -6,6 +6,7 @@ This test ensures that when a transformer or estimator doesn't have an optimized
 the system falls back to using the original implementation instead of failing.
 """
 
+import numpy as np
 import pytest
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
@@ -45,10 +46,11 @@ class TestFallbackMechanism:
     @pytest.fixture
     def test_data(self):
         """Generate test data."""
-        X, y = make_classification(n_samples=100, n_features=10, random_state=42)
+        X, y = make_classification(n_samples=20, n_features=4, random_state=42)
         return X, y
 
     def test_custom_transformer_fallback(self, test_data):
+        """Test fallback mechanism with custom transformer."""
         """Test that custom transformers fall back to original implementation."""
         X, y = test_data
 
@@ -139,6 +141,53 @@ class TestFallbackMechanism:
         assert orig_pred == fast_pred, (
             f"ColumnTransformer fallback failed: {orig_pred} vs {fast_pred}"
         )
+
+    def test_fallback_single_value_output(self):
+        """Test fallback with transformer that outputs single value."""
+        from sklearn.feature_selection import VarianceThreshold
+
+        X = np.array([[1, 2, 0], [4, 5, 0], [7, 8, 0], [2, 3, 0]])
+        y = np.array([0, 1, 0, 1])
+
+        # VarianceThreshold will remove the zero-variance column
+        selector = VarianceThreshold()
+        selector.fit(X)
+
+        # Create pipeline with unsupported transformer (for testing)
+        class SingleOutputTransformer(BaseEstimator, TransformerMixin):
+            def fit(self, X, y=None):
+                return self
+
+            def transform(self, X):
+                # Return single column
+                return X[:, [0]]
+
+        transformer = SingleOutputTransformer()
+        transformer.fit(X)
+
+        from stripje.registry import create_fallback_handler
+
+        fallback = create_fallback_handler(transformer)
+        test_row = [1, 2, 3]
+        result = fallback(test_row)
+
+        # Should return single value
+        assert isinstance(result, (int, float, np.number))
+
+    def test_fallback_invalid_step(self):
+        """Test fallback with object that has neither transform nor predict."""
+
+        class InvalidStep:
+            pass
+
+        invalid_step = InvalidStep()
+
+        from stripje.registry import create_fallback_handler
+
+        fallback = create_fallback_handler(invalid_step)
+
+        with pytest.raises(ValueError, match="neither transform nor predict"):
+            fallback([1, 2, 3])
 
 
 if __name__ == "__main__":
