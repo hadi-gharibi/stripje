@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
-        sklearn-version: ["1.3.2", "1.4.4", "1.5.2"]
+        sklearn-version: ["1.5.2", "1.6.0", "1.6.1", "1.7.0", "1.7.2"]
 
     steps:
     - uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv add scikit-learn==${{ matrix.sklearn-version }}
+        uv pip install scikit-learn==${{ matrix.sklearn-version }}
         uv sync --extra dev
 
     - name: Run tests
@@ -43,8 +43,12 @@ jobs:
   build:
     needs: test-before-release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Allow pushing version commit
     steps:
     - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Python 3.11
       uses: actions/setup-python@v4
@@ -58,12 +62,26 @@ jobs:
 
     - name: Install build dependencies
       run: |
-        uv add build twine
+        uv pip install build twine
 
     - name: Update version (if manual trigger)
       if: github.event_name == 'workflow_dispatch'
       run: |
-        sed -i 's/version = ".*"/version = "${{ github.event.inputs.version }}"/' pyproject.toml
+        # Validate version format (semantic versioning)
+        if ! echo "${{ github.event.inputs.version }}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$'; then
+          echo "Error: Version must follow semantic versioning (e.g., 1.0.0 or 1.0.0-beta)"
+          exit 1
+        fi
+        sed -i 's/__version__ = ".*"/__version__ = "${{ github.event.inputs.version }}"/' src/stripje/__version__.py
+
+    - name: Commit version change (if manual trigger)
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add src/stripje/__version__.py
+        git commit -m "chore: bump version to ${{ github.event.inputs.version }}"
+        git push
 
     - name: Build package
       run: |
