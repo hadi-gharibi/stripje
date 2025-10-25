@@ -16,7 +16,6 @@ try:
     from category_encoders import (
         BinaryEncoder,
         OneHotEncoder,
-        TargetEncoder,
     )
 
     CATEGORY_ENCODERS_AVAILABLE = True

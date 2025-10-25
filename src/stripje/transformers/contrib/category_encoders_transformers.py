@@ -64,15 +64,15 @@ if CATEGORY_ENCODERS_AVAILABLE:
 
         def transform_one(x: Any) -> Any:
             # Convert to dict if it's a list/array with column names
-            if isinstance(x, (list, np.ndarray)):
+            x_dict: Any
+            if not isinstance(x, (list, np.ndarray)):
+                x_dict = x  # type: ignore[unreachable]
+            elif hasattr(step, "cols") and step.cols:
                 # Assume x is ordered according to the columns used during fit
-                if hasattr(step, "cols") and step.cols:
-                    x_dict = {col: x[i] for i, col in enumerate(step.cols)}
-                else:
-                    # Default to using integer indices as column names
-                    x_dict = dict(enumerate(x))
+                x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
-                x_dict = x
+                # Default to using integer indices as column names
+                x_dict = dict(enumerate(x))
 
             result = []
 
@@ -128,13 +128,13 @@ if CATEGORY_ENCODERS_AVAILABLE:
         mapping = step.mapping
 
         def transform_one(x: Any) -> Any:
-            if isinstance(x, (list, np.ndarray)):
-                if hasattr(step, "cols") and step.cols:
-                    x_dict = {col: x[i] for i, col in enumerate(step.cols)}
-                else:
-                    x_dict = dict(enumerate(x))
+            x_dict: Any
+            if not isinstance(x, (list, np.ndarray)):
+                x_dict = x  # type: ignore[unreachable]
+            elif hasattr(step, "cols") and step.cols:
+                x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
-                x_dict = x
+                x_dict = dict(enumerate(x))
 
             result = []
 
@@ -183,13 +183,13 @@ if CATEGORY_ENCODERS_AVAILABLE:
         mapping = step.mapping
 
         def transform_one(x: Any) -> Any:
-            if isinstance(x, (list, np.ndarray)):
-                if hasattr(step, "cols") and step.cols:
-                    x_dict = {col: x[i] for i, col in enumerate(step.cols)}
-                else:
-                    x_dict = dict(enumerate(x))
+            x_dict: Any
+            if not isinstance(x, (list, np.ndarray)):
+                x_dict = x  # type: ignore[unreachable]
+            elif hasattr(step, "cols") and step.cols:
+                x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
-                x_dict = x
+                x_dict = dict(enumerate(x))
 
             result = []
             for col_mapping in mapping:
@@ -223,15 +223,15 @@ if CATEGORY_ENCODERS_AVAILABLE:
         cols_to_hash = step.cols if hasattr(step, "cols") and step.cols else None
 
         def transform_one(x: Any) -> Any:
-            if isinstance(x, (list, np.ndarray)):
-                if hasattr(step, "cols") and step.cols:
-                    x_dict = {col: x[i] for i, col in enumerate(step.cols)}
-                else:
-                    x_dict = dict(enumerate(x))
+            x_dict: Any
+            if not isinstance(x, (list, np.ndarray)):
+                x_dict = x  # type: ignore[unreachable]
+            elif hasattr(step, "cols") and step.cols:
+                x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
-                x_dict = x
+                x_dict = dict(enumerate(x))
 
-            result = [0.0] * step.n_components
+            result: list[Any] = [0.0] * step.n_components
 
             # Hash each categorical column
             cols_to_process = (
@@ -266,13 +266,13 @@ if CATEGORY_ENCODERS_AVAILABLE:
         mapping = step.mapping
 
         def transform_one(x: Any) -> Any:
-            if isinstance(x, (list, np.ndarray)):
-                if hasattr(step, "cols") and step.cols:
-                    x_dict = {col: x[i] for i, col in enumerate(step.cols)}
-                else:
-                    x_dict = dict(enumerate(x))
+            x_dict: Any
+            if not isinstance(x, (list, np.ndarray)):
+                x_dict = x  # type: ignore[unreachable]
+            elif hasattr(step, "cols") and step.cols:
+                x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
-                x_dict = x
+                x_dict = dict(enumerate(x))
 
             result = []
 
@@ -330,13 +330,13 @@ if CATEGORY_ENCODERS_AVAILABLE:
         mapping = step.mapping
 
         def transform_one(x: Any) -> Any:
-            if isinstance(x, (list, np.ndarray)):
-                if hasattr(step, "cols") and step.cols:
-                    x_dict = {col: x[i] for i, col in enumerate(step.cols)}
-                else:
-                    x_dict = dict(enumerate(x))
+            x_dict: Any
+            if not isinstance(x, (list, np.ndarray)):
+                x_dict = x  # type: ignore[unreachable]
+            elif hasattr(step, "cols") and step.cols:
+                x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
-                x_dict = x
+                x_dict = dict(enumerate(x))
 
             result = []
 
@@ -376,13 +376,13 @@ if CATEGORY_ENCODERS_AVAILABLE:
         mapping = step.mapping
 
         def transform_one(x: Any) -> Any:
-            if isinstance(x, (list, np.ndarray)):
-                if hasattr(step, "cols") and step.cols:
-                    x_dict = {col: x[i] for i, col in enumerate(step.cols)}
-                else:
-                    x_dict = dict(enumerate(x))
+            x_dict: Any
+            if not isinstance(x, (list, np.ndarray)):
+                x_dict = x  # type: ignore[unreachable]
+            elif hasattr(step, "cols") and step.cols:
+                x_dict = {col: x[i] for i, col in enumerate(step.cols)}
             else:
-                x_dict = x
+                x_dict = dict(enumerate(x))
 
             result = []
 
