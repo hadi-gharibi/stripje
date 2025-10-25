@@ -143,6 +143,7 @@ module = [
     "pandas.*",
     "numpy.*",
     "category_encoders.*",
+    "joblib.*",
 ]
 ignore_missing_imports = true
 

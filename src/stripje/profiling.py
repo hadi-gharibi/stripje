@@ -12,7 +12,7 @@ from types import MethodType
 from typing import Any, Callable
 
 import numpy as np
-from joblib import parallel_backend  # type: ignore[import-not-found]
+from joblib import parallel_backend
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
