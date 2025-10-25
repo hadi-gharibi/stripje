@@ -295,7 +295,7 @@ class ProfileReport:
         
         timing_badge = self._get_timing_badge(node.mean_duration, node.mean_duration_display)
         html.append('<div class="sk-estimator-name">')
-        html.append(f'<span>{self._escape_html(node.kind)}</span>')
+        html.append(f'<span>{self._escape_html(node.name)}</span>')
         html.append(timing_badge)
         html.append('</div>')
         

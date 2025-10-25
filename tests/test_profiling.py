@@ -10,7 +10,8 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from stripje.profiling import PipelineProfiler
+from stripje.profiling import PipelineProfiler, ProfileNode, ProfileReport
+import stripje.profiling
 
 
 class SleepTransformer(TransformerMixin, BaseEstimator):
@@ -192,3 +193,67 @@ def test_compiled_pipeline_profiler_handles_pandas_series():
 
     assert [child.name for child in report.root.children] == ["sleep_a", "sleep_b"]
     assert report.root.children[0].last_duration > 0
+
+
+def test_profile_report_to_dict():
+    root = ProfileNode("root", "Pipeline", "predict")
+    root.child("step1", "Transformer", "transform")
+    report = ProfileReport(root)
+    report_dict = report.to_dict()
+    assert report_dict["name"] == "root"
+    assert len(report_dict["children"]) == 1
+    assert report_dict["children"][0]["name"] == "step1"
+
+
+def test_profile_report_repr_html():
+    X = np.ones((4, 3))
+    pipeline = Pipeline(
+        [
+            ("sleep_a", SleepTransformer(0.01)),
+            ("sleep_b", SleepTransformer(0.02)),
+        ]
+    )
+    pipeline.fit(X)
+
+    profiler = PipelineProfiler(pipeline, mode="transform", repetitions=1)
+    report = profiler.run(X)
+    html = report._repr_html_()
+
+    assert 'stripje-profile-container' in html
+    assert "sleep_a" in html
+    assert "sleep_b" in html
+    assert "⏱" in html
+
+
+def test_profiler_with_warmup_and_repetitions():
+    X = np.ones((4, 3))
+    pipeline = Pipeline([("sleep", SleepTransformer(0.01))])
+    pipeline.fit(X)
+
+    profiler = PipelineProfiler(pipeline, mode="transform", repetitions=3, warmup=2)
+    report = profiler.run(X)
+
+    assert report.root.call_count == 3
+    assert report.root.children[0].call_count == 3
+
+
+def test_compiled_profiler_with_warmup_and_repetitions():
+    X = np.ones((4, 3))
+    pipeline = Pipeline([("sleep", SleepTransformer(0.01))])
+    pipeline.fit(X)
+
+    # This is a bit of a trick to test the warmup and repetitions
+    # on the compiled path, as it doesn't directly support it.
+    # We can check the number of events on the nodes.
+    profiler = PipelineProfiler(pipeline, mode="transform", repetitions=1, warmup=0)
+
+    # manually call it multiple times
+    root = ProfileNode(name="compiled_pipeline", kind="callable", method="call")
+    strategy = stripje.profiling.CompiledProfilingStrategy()
+    for _ in range(2):  # warmup
+        strategy.profile(pipeline, X[0], ProfileNode("_warmup", "Pipeline", "call"))
+
+    for _ in range(3):  # repetitions
+        strategy.profile(pipeline, X[0], root)
+
+    assert root.children[0].call_count == 3
