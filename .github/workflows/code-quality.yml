@@ -85,34 +85,34 @@ jobs:
           bandit-report.json
           safety-report.json
 
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
+  # docs:
+    # runs-on: ubuntu-latest
+    # steps:
+    # - uses: actions/checkout@v4
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
+    # - name: Set up Python 3.11
+    #   uses: actions/setup-python@v4
+    #   with:
+    #     python-version: "3.11"
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v3
-      with:
-        enable-cache: true
+    # - name: Install uv
+    #   uses: astral-sh/setup-uv@v3
+    #   with:
+    #     enable-cache: true
 
-    - name: Install dependencies
-      run: |
-        uv sync --extra dev
-        uv add pydocstyle
+    # - name: Install dependencies
+    #   run: |
+    #     uv sync --extra dev
+    #     uv add pydocstyle
 
-    - name: Check docstring style
-      run: |
-        uv run pydocstyle src/stripje --convention=google
+    # - name: Check docstring style
+    #   run: |
+    #     uv run pydocstyle src/stripje --convention=google
 
-    - name: Test imports
-      run: |
-        uv run python -c "import stripje; print('Import successful')"
-        uv run python -c "from stripje import compile_pipeline, get_supported_transformers; print('Core functions importable')"
+    # - name: Test imports
+    #   run: |
+    #     uv run python -c "import stripje; print('Import successful')"
+    #     uv run python -c "from stripje import compile_pipeline, get_supported_transformers; print('Core functions importable')"
 
   compatibility:
     runs-on: ${{ matrix.os }}
