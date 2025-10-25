@@ -3,15 +3,24 @@ repos:
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
+        stages: [pre-push]
       - id: end-of-file-fixer
+        stages: [pre-push]
       - id: check-yaml
+        stages: [pre-push]
       - id: check-toml
+        stages: [pre-push]
       - id: check-json
+        stages: [pre-push]
       - id: check-merge-conflict
+        stages: [pre-push]
       - id: check-added-large-files
         args: ['--maxkb=1000']
+        stages: [pre-push]
       - id: debug-statements
+        stages: [pre-push]
       - id: check-docstring-first
+        stages: [pre-push]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.4
@@ -20,9 +29,11 @@ repos:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
         exclude: ^examples/
+        stages: [pre-push]
       # Run the formatter
       - id: ruff-format
         exclude: ^examples/
+        stages: [pre-push]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.11.2
@@ -32,6 +43,7 @@ repos:
           - types-requests
         args: [--strict, --ignore-missing-imports]
         files: ^src/
+        stages: [pre-push]
 
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.5
@@ -40,6 +52,7 @@ repos:
         args: [-c, pyproject.toml]
         additional_dependencies: ["bandit[toml]", "pbr"]
         exclude: ^tests/
+        stages: [pre-push]
 
   - repo: local
     hooks:
@@ -49,4 +62,5 @@ repos:
         language: system
         pass_filenames: false
         always_run: false
+        stages: [pre-push]
         args: ["run", "--group", "testing", "pytest"]

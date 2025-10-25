@@ -1,5 +1,18 @@
 name: Category Encoders Compatibility
 
+# This workflow tests compatibility with category_encoders across different versions
+# Strategy:
+# - Always test with "latest" versions to catch new releases automatically
+# - Test minimum supported versions to ensure backward compatibility
+# - Test across version boundaries where requirements change
+# - Weekly scheduled runs catch breaking changes in dependencies
+#
+# Version Requirements (verified from PyPI):
+# - category_encoders 2.6.x: requires sklearn >=0.20.0
+# - category_encoders 2.7.x: requires sklearn >=1.0.0, <1.6.0
+# - category_encoders 2.8.x: requires sklearn >=1.6.0
+# - Current latest: category_encoders 2.8.1, sklearn 1.7.2
+
 on:
   push:
     branches: [ main, develop ]
@@ -16,30 +29,40 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
-        category-encoders-version: ["2.6.1", "2.6.2", "2.6.3"]
-        sklearn-version: ["1.4.4", "1.5.2"]
+        test-scenario:
+          # Test latest stable versions (recommended for most users)
+          - name: "latest-stable"
+            category-encoders-version: "latest"
+            sklearn-version: "latest"
+          
+          # Test 2.7.x series (last version before sklearn 1.6.0 requirement)
+          - name: "ce-2.7-sklearn-1.5"
+            category-encoders-version: "2.7.0"
+            sklearn-version: "1.5.2"
+          
+          # Test 2.8.x series with sklearn 1.6.x (minimum for 2.8+)
+          - name: "ce-2.8-sklearn-1.6"
+            category-encoders-version: "2.8.0"
+            sklearn-version: "1.6.0"
+          
+          # Test older 2.6.x with sklearn 1.0.x
+          - name: "ce-2.6-sklearn-1.0"
+            category-encoders-version: "2.6.3"
+            sklearn-version: "1.0.2"
+          
         include:
-          # Test with latest versions on all Python versions
-          - python-version: "3.10"
-            category-encoders-version: "latest"
-            sklearn-version: "latest"
-          - python-version: "3.11"
-            category-encoders-version: "latest"
-            sklearn-version: "latest"
+          # Test development version on latest Python only
           - python-version: "3.12"
-            category-encoders-version: "latest"
-            sklearn-version: "latest"
-          # Test with development version on Python 3.11 and 3.12
-          - python-version: "3.11"
-            category-encoders-version: "git+https://github.com/scikit-learn-contrib/category_encoders.git"
-            sklearn-version: "latest"
-          - python-version: "3.12"
-            category-encoders-version: "git+https://github.com/scikit-learn-contrib/category_encoders.git"
-            sklearn-version: "latest"
+            test-scenario:
+              name: "dev-version"
+              category-encoders-version: "git+https://github.com/scikit-learn-contrib/category_encoders.git"
+              sklearn-version: "latest"
+        
         exclude:
-          # Python 3.12 with sklearn 1.4.4 may have compatibility issues
+          # Python 3.12 may have compatibility issues with older versions
           - python-version: "3.12"
-            sklearn-version: "1.4.4"
+            test-scenario:
+              name: "ce-2.6-sklearn-1.0"
 
     steps:
     - uses: actions/checkout@v4
@@ -62,24 +85,24 @@ jobs:
         path: |
           ~/.cache/uv
           .venv
-        key: ${{ runner.os }}-uv-${{ matrix.python-version }}-${{ matrix.category-encoders-version }}-${{ matrix.sklearn-version }}-${{ hashFiles('uv.lock') }}
+        key: ${{ runner.os }}-uv-${{ matrix.python-version }}-${{ matrix.test-scenario.name }}-${{ hashFiles('uv.lock') }}
 
     - name: Install scikit-learn
       run: |
-        if [ "${{ matrix.sklearn-version }}" = "latest" ]; then
+        if [ "${{ matrix.test-scenario.sklearn-version }}" = "latest" ]; then
           uv add scikit-learn
         else
-          uv add scikit-learn==${{ matrix.sklearn-version }}
+          uv add scikit-learn==${{ matrix.test-scenario.sklearn-version }}
         fi
 
     - name: Install category encoders
       run: |
-        if [ "${{ matrix.category-encoders-version }}" = "latest" ]; then
+        if [ "${{ matrix.test-scenario.category-encoders-version }}" = "latest" ]; then
           uv add category_encoders
-        elif [[ "${{ matrix.category-encoders-version }}" == git+* ]]; then
-          uv add "${{ matrix.category-encoders-version }}"
+        elif [[ "${{ matrix.test-scenario.category-encoders-version }}" == git+* ]]; then
+          uv add "${{ matrix.test-scenario.category-encoders-version }}"
         else
-          uv add category_encoders==${{ matrix.category-encoders-version }}
+          uv add category_encoders==${{ matrix.test-scenario.category-encoders-version }}
         fi
 
     - name: Install package and test dependencies
