@@ -78,24 +78,24 @@ jobs:
     - name: Install scikit-learn
       run: |
         if [ "${{ matrix.test-scenario.sklearn-version }}" = "latest" ]; then
-          uv add scikit-learn --no-sync
+          uv add scikit-learn --no-sync --python ${{ matrix.python-version }}
         else
-          uv add scikit-learn==${{ matrix.test-scenario.sklearn-version }} --no-sync
+          uv add scikit-learn==${{ matrix.test-scenario.sklearn-version }} --no-sync --python ${{ matrix.python-version }}
         fi
 
     - name: Install category encoders
       run: |
         if [ "${{ matrix.test-scenario.category-encoders-version }}" = "latest" ]; then
-          uv add category_encoders --no-sync
+          uv add category_encoders --no-sync --python ${{ matrix.python-version }}
         elif [[ "${{ matrix.test-scenario.category-encoders-version }}" == git+* ]]; then
-          uv add "${{ matrix.test-scenario.category-encoders-version }}" --no-sync
+          uv add "${{ matrix.test-scenario.category-encoders-version }}" --no-sync --python ${{ matrix.python-version }}
         else
-          uv add category_encoders==${{ matrix.test-scenario.category-encoders-version }} --no-sync
+          uv add category_encoders==${{ matrix.test-scenario.category-encoders-version }} --no-sync --python ${{ matrix.python-version }}
         fi
 
     - name: Install package and test dependencies
       run: |
-        uv sync --extra dev --group testing
+        uv sync --extra dev --group testing --python ${{ matrix.python-version }}
 
     - name: Show installed versions
       run: |

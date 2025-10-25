@@ -120,7 +120,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
     - uses: actions/checkout@v4
@@ -142,4 +142,4 @@ jobs:
 
     - name: Test basic functionality
       run: |
-        uv run python tests/integration/test_basic_functionality.py
+        uv run python tests/test_integration/test_basic_functionality.py
