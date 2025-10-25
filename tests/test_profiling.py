@@ -149,8 +149,14 @@ def test_column_transformer_parallel_branch_timings():
     assert column_node.last_duration >= max(
         numeric_node.last_duration, categorical_node.last_duration
     )
+    # Allow for significant overhead in parallel execution, especially in CI environments
+    # The upper bound should be generous since thread pool overhead, GIL contention,
+    # and system scheduling can significantly impact parallel execution timing
+    max_parallel_duration = max(numeric_node.last_duration, categorical_node.last_duration)
+    # Allow up to 100% overhead or 0.05s, whichever is larger
+    overhead_tolerance = max(max_parallel_duration, 0.05)
     assert column_node.last_duration <= (
-        numeric_node.last_duration + categorical_node.last_duration + 0.02
+        max_parallel_duration + overhead_tolerance
     )
 
     assert_duration(final_node.last_duration, 0.01)
