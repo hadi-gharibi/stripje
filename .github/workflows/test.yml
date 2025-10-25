@@ -73,7 +73,7 @@ jobs:
       run: |
         uv run pytest tests/ -v --tb=short --durations=10 \
           --ignore=tests/test_transformers/test_contrib \
-          --cov=stripje --cov-report=xml --cov-report=term-missing
+          --no-cov
 
     - name: Run all tests (with category encoders)
       if: matrix.test-category-encoders
@@ -116,7 +116,7 @@ jobs:
 
     - name: Run minimal tests (core functionality only)
       run: |
-        uv run pytest tests/test_fast_pipeline.py tests/test_integration.py -v
+        uv run pytest tests/test_fast_pipeline.py tests/test_integration.py -v --no-cov
 
   test-edge-cases:
     name: Test edge cases and performance
@@ -141,11 +141,11 @@ jobs:
 
     - name: Run performance benchmarks
       run: |
-        uv run pytest tests/test_performance_benchmarks.py -v --tb=short
+        uv run pytest tests/test_performance_benchmarks.py -v --tb=short --no-cov
 
     - name: Run edge case tests
       run: |
-        uv run pytest tests/test_fallback_mechanism.py -v --tb=short
+        uv run pytest tests/test_fallback_mechanism.py -v --tb=short --no-cov
 
     - name: Test example scripts
       run: |

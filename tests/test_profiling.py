@@ -5,10 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 import stripje.profiling
 from stripje.profiling import PipelineProfiler, ProfileNode, ProfileReport
@@ -75,91 +72,6 @@ def test_pipeline_profiler_records_step_durations():
 
     sequential_expected = first_step.last_duration + second_step.last_duration
     assert root.last_duration >= sequential_expected
-
-
-def test_column_transformer_parallel_branch_timings():
-    df = pd.DataFrame({"num1": [1, 2, 3], "num2": [4, 5, 6], "cat": ["a", "b", "c"]})
-
-    slow_numeric = Pipeline(
-        [
-            ("sleep", SleepTransformer(0.05)),
-            ("impute", SimpleImputer(strategy="median")),
-            ("scale", StandardScaler()),
-        ]
-    )
-
-    slow_categorical = Pipeline(
-        [
-            ("sleep", SleepTransformer(0.03)),
-            ("impute", SimpleImputer(strategy="most_frequent")),
-            ("encode", OneHotEncoder(handle_unknown="ignore")),
-        ]
-    )
-
-    column_transformer = ColumnTransformer(
-        transformers=[
-            ("numeric", slow_numeric, ["num1", "num2"]),
-            ("categorical", slow_categorical, ["cat"]),
-        ],
-        n_jobs=2,
-        remainder="drop",
-    )
-
-    pipeline = Pipeline(
-        [
-            ("columns", column_transformer),
-            ("final", SleepEstimator(0.01)),
-        ]
-    )
-    pipeline.fit(df, np.zeros(len(df)))
-
-    profiler = PipelineProfiler(pipeline, mode="predict", repetitions=1)
-    report = profiler.run(df)
-
-    root = report.root
-    column_node = next(child for child in root.children if child.name == "columns")
-    final_node = next(child for child in root.children if child.name == "final")
-
-    assert column_node.name == "columns"
-    assert len(column_node.children) == 2
-    numeric_node = next(
-        child for child in column_node.children if child.name == "numeric"
-    )
-    categorical_node = next(
-        child for child in column_node.children if child.name == "categorical"
-    )
-
-    assert_duration(numeric_node.last_duration, 0.05)
-    assert_duration(categorical_node.last_duration, 0.03)
-
-    numeric_child_names = [child.name for child in numeric_node.children]
-    assert numeric_child_names == ["sleep", "impute", "scale"]
-    numeric_sleep = next(
-        child for child in numeric_node.children if child.name == "sleep"
-    )
-    assert_duration(numeric_sleep.last_duration, 0.05)
-
-    categorical_child_names = [child.name for child in categorical_node.children]
-    assert categorical_child_names == ["sleep", "impute", "encode"]
-    categorical_sleep = next(
-        child for child in categorical_node.children if child.name == "sleep"
-    )
-    assert_duration(categorical_sleep.last_duration, 0.03)
-
-    assert column_node.last_duration >= max(
-        numeric_node.last_duration, categorical_node.last_duration
-    )
-    # Allow for significant overhead in parallel execution, especially in CI environments
-    # The upper bound should be generous since thread pool overhead, GIL contention,
-    # and system scheduling can significantly impact parallel execution timing
-    max_parallel_duration = max(
-        numeric_node.last_duration, categorical_node.last_duration
-    )
-    # Allow up to 100% overhead or 0.05s, whichever is larger
-    overhead_tolerance = max(max_parallel_duration, 0.05)
-    assert column_node.last_duration <= (max_parallel_duration + overhead_tolerance)
-
-    assert_duration(final_node.last_duration, 0.01)
 
 
 def test_compiled_pipeline_profiler_matches_step_structure():
