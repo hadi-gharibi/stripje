@@ -179,12 +179,17 @@ exclude_lines = [
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-
-[project.optional-dependencies]
-dev = [
+[dependency-groups]
+testing = [
     "pytest>=8.4.2",
     "pytest-cov>=5.0.0",
     "pytest-xdist>=3.3.0",
+    "pytest-benchmark>=4.0.0",
+    "category_encoders>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
     "ruff>=0.6.0",
     "mypy>=1.10.0",
     "pre-commit>=3.8.0",
@@ -196,13 +201,6 @@ dev = [
     "pbr>=7.0.1",
 ]
 category_encoders = [
-    "category_encoders>=2.0.0",
-]
-testing = [
-    "pytest>=8.4.2",
-    "pytest-cov>=5.0.0",
-    "pytest-xdist>=3.3.0",
-    "pytest-benchmark>=4.0.0",
     "category_encoders>=2.0.0",
 ]
 
