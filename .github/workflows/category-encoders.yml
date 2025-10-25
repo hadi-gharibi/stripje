@@ -33,11 +33,6 @@ jobs:
             category-encoders-version: "2.8.0"
             sklearn-version: "1.6.0"
 
-          # Test older 2.6.x with sklearn 1.0.x
-          - name: "ce-2.6-sklearn-1.0"
-            category-encoders-version: "2.6.3"
-            sklearn-version: "1.0.2"
-
         include:
           # Test development version on latest Python only
           - python-version: "3.12"
