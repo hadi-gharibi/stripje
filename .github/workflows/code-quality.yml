@@ -73,7 +73,7 @@ jobs:
 
     - name: Check dependencies for security vulnerabilities
       run: |
-        uv run safety check --json --output safety-report.json
+        uv run safety check --output json > safety-report.json
         uv run safety check # Also show human readable output
 
     - name: Upload security reports
