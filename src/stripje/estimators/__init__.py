@@ -2,13 +2,23 @@
 Estimators module - handlers for sklearn estimators (classifiers, regressors, etc.).
 """
 
-# Import individual modules to register handlers
-from . import ensemble, linear, naive_bayes, tree
-from .ensemble import *
+import importlib
+import pkgutil
+from pathlib import Path
 
-# Export handlers
-from .linear import *
-from .naive_bayes import *
-from .tree import *
+# Dynamically discover and import all modules in this package
+_current_dir = Path(__file__).parent
 
-__all__ = linear.__all__ + tree.__all__ + ensemble.__all__ + naive_bayes.__all__
+# Import all Python modules in the current directory (except __init__.py)
+for module_info in pkgutil.iter_modules([str(_current_dir)]):
+    if not module_info.name.startswith("_"):
+        importlib.import_module(f".{module_info.name}", package=__name__)
+
+# Dynamically build __all__ from all imported modules
+__all__ = []
+for name in dir():
+    if not name.startswith("_"):
+        obj = globals()[name]
+        # Include functions and classes, but exclude modules and imported utilities
+        if callable(obj) and not isinstance(obj, type(pkgutil)):
+            __all__.append(name)
