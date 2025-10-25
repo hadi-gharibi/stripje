@@ -27,7 +27,7 @@ repos:
     hooks:
       # Run the linter - matches GitHub Actions
       - id: ruff
-        args: [check]
+        args: []
         files: ^(src|tests)/
         stages: [pre-push]
       # Run the formatter - matches GitHub Actions
@@ -53,6 +53,7 @@ repos:
         args: [-r, src/, -c, pyproject.toml]
         additional_dependencies: ["bandit[toml]", "pbr"]
         files: ^src/
+        pass_filenames: false
         stages: [pre-push]
 
   - repo: local

@@ -64,7 +64,6 @@ if CATEGORY_ENCODERS_AVAILABLE:
 
         def transform_one(x: Any) -> Any:
             # Convert to dict if it's a list/array with column names
-            x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
                 x_dict = x
             elif hasattr(step, "cols") and step.cols:
@@ -128,7 +127,6 @@ if CATEGORY_ENCODERS_AVAILABLE:
         mapping = step.mapping
 
         def transform_one(x: Any) -> Any:
-            x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
                 x_dict = x
             elif hasattr(step, "cols") and step.cols:
@@ -183,7 +181,6 @@ if CATEGORY_ENCODERS_AVAILABLE:
         mapping = step.mapping
 
         def transform_one(x: Any) -> Any:
-            x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
                 x_dict = x
             elif hasattr(step, "cols") and step.cols:
@@ -223,7 +220,6 @@ if CATEGORY_ENCODERS_AVAILABLE:
         cols_to_hash = step.cols if hasattr(step, "cols") and step.cols else None
 
         def transform_one(x: Any) -> Any:
-            x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
                 x_dict = x
             elif hasattr(step, "cols") and step.cols:
@@ -266,7 +262,6 @@ if CATEGORY_ENCODERS_AVAILABLE:
         mapping = step.mapping
 
         def transform_one(x: Any) -> Any:
-            x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
                 x_dict = x
             elif hasattr(step, "cols") and step.cols:
@@ -330,7 +325,6 @@ if CATEGORY_ENCODERS_AVAILABLE:
         mapping = step.mapping
 
         def transform_one(x: Any) -> Any:
-            x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
                 x_dict = x
             elif hasattr(step, "cols") and step.cols:
@@ -376,7 +370,6 @@ if CATEGORY_ENCODERS_AVAILABLE:
         mapping = step.mapping
 
         def transform_one(x: Any) -> Any:
-            x_dict: Any
             if not isinstance(x, (list, np.ndarray)):
                 x_dict = x
             elif hasattr(step, "cols") and step.cols:
