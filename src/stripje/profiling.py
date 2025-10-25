@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from contextlib import ExitStack, suppress
 from dataclasses import dataclass, field
 from functools import wraps
 from time import perf_counter_ns
 from types import MethodType
-from typing import Any, Callable
+from typing import Any
 
 import numpy as np
 from joblib import parallel_backend

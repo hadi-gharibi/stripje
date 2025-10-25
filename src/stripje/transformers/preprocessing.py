@@ -2,8 +2,8 @@
 Preprocessing transformers handlers for single-row inference.
 """
 
-from collections.abc import Sequence
-from typing import Any, Callable, Union
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 from sklearn.preprocessing import (
@@ -30,12 +30,12 @@ from ..registry import register_step_handler
 @register_step_handler(StandardScaler)
 def handle_standard_scaler(
     step: StandardScaler,
-) -> Callable[[Sequence[Union[float, int]]], list[float]]:
+) -> Callable[[Sequence[float | int]], list[float]]:
     """Handle StandardScaler for single-row input."""
     mean = step.mean_
     scale = step.scale_
 
-    def transform_one(x: Sequence[Union[float, int]]) -> list[float]:
+    def transform_one(x: Sequence[float | int]) -> list[float]:
         return [(val - mean[i]) / scale[i] for i, val in enumerate(x)]
 
     return transform_one
@@ -44,12 +44,12 @@ def handle_standard_scaler(
 @register_step_handler(MinMaxScaler)
 def handle_minmax_scaler(
     step: MinMaxScaler,
-) -> Callable[[Sequence[Union[float, int]]], list[float]]:
+) -> Callable[[Sequence[float | int]], list[float]]:
     """Handle MinMaxScaler for single-row input."""
     data_min = step.data_min_
     data_range = step.data_max_ - step.data_min_
 
-    def transform_one(x: Sequence[Union[float, int]]) -> list[float]:
+    def transform_one(x: Sequence[float | int]) -> list[float]:
         return [(val - data_min[i]) / data_range[i] for i, val in enumerate(x)]
 
     return transform_one
@@ -58,12 +58,12 @@ def handle_minmax_scaler(
 @register_step_handler(RobustScaler)
 def handle_robust_scaler(
     step: RobustScaler,
-) -> Callable[[Sequence[Union[float, int]]], list[float]]:
+) -> Callable[[Sequence[float | int]], list[float]]:
     """Handle RobustScaler for single-row input."""
     center = step.center_
     scale = step.scale_
 
-    def transform_one(x: Sequence[Union[float, int]]) -> list[float]:
+    def transform_one(x: Sequence[float | int]) -> list[float]:
         return [(val - center[i]) / scale[i] for i, val in enumerate(x)]
 
     return transform_one
@@ -72,11 +72,11 @@ def handle_robust_scaler(
 @register_step_handler(MaxAbsScaler)
 def handle_maxabs_scaler(
     step: MaxAbsScaler,
-) -> Callable[[Sequence[Union[float, int]]], list[float]]:
+) -> Callable[[Sequence[float | int]], list[float]]:
     """Handle MaxAbsScaler for single-row input."""
     scale = step.scale_
 
-    def transform_one(x: Sequence[Union[float, int]]) -> list[float]:
+    def transform_one(x: Sequence[float | int]) -> list[float]:
         return [val / scale[i] for i, val in enumerate(x)]
 
     return transform_one
@@ -85,11 +85,11 @@ def handle_maxabs_scaler(
 @register_step_handler(Normalizer)
 def handle_normalizer(
     step: Normalizer,
-) -> Callable[[Sequence[Union[float, int]]], list[float]]:
+) -> Callable[[Sequence[float | int]], list[float]]:
     """Handle Normalizer for single-row input."""
     norm = step.norm
 
-    def transform_one(x: Sequence[Union[float, int]]) -> list[float]:
+    def transform_one(x: Sequence[float | int]) -> list[float]:
         if norm == "l2":
             norm_val = sum(val**2 for val in x) ** 0.5
         elif norm == "l1":
@@ -161,11 +161,11 @@ def handle_ordinal_encoder(
 @register_step_handler(LabelEncoder)
 def handle_label_encoder(
     step: LabelEncoder,
-) -> Callable[[Union[Any, Sequence[Any]]], list[float]]:
+) -> Callable[[Any | Sequence[Any]], list[float]]:
     """Handle LabelEncoder for single-row input."""
     classes = step.classes_
 
-    def transform_one(x: Union[Any, Sequence[Any]]) -> list[float]:
+    def transform_one(x: Any | Sequence[Any]) -> list[float]:
         # x should be a single value for LabelEncoder
         val = x[0] if isinstance(x, (list, tuple)) else x
         try:
@@ -180,11 +180,11 @@ def handle_label_encoder(
 @register_step_handler(LabelBinarizer)
 def handle_label_binarizer(
     step: LabelBinarizer,
-) -> Callable[[Union[Any, Sequence[Any]]], list[float]]:
+) -> Callable[[Any | Sequence[Any]], list[float]]:
     """Handle LabelBinarizer for single-row input."""
     classes = step.classes_
 
-    def transform_one(x: Union[Any, Sequence[Any]]) -> list[float]:
+    def transform_one(x: Any | Sequence[Any]) -> list[float]:
         val = x[0] if isinstance(x, (list, tuple)) else x
         result = [0.0] * len(classes)
         try:
@@ -324,11 +324,11 @@ def handle_power_transformer(step: PowerTransformer) -> Callable[[Any], Any]:
 @register_step_handler(Binarizer)
 def handle_binarizer(
     step: Binarizer,
-) -> Callable[[Sequence[Union[float, int]]], list[float]]:
+) -> Callable[[Sequence[float | int]], list[float]]:
     """Handle Binarizer for single-row input."""
     threshold = step.threshold
 
-    def transform_one(x: Sequence[Union[float, int]]) -> list[float]:
+    def transform_one(x: Sequence[float | int]) -> list[float]:
         return [1.0 if val > threshold else 0.0 for val in x]
 
     return transform_one
@@ -337,13 +337,13 @@ def handle_binarizer(
 @register_step_handler(KBinsDiscretizer)
 def handle_kbins_discretizer(
     step: KBinsDiscretizer,
-) -> Callable[[Sequence[Union[float, int]]], list[float]]:
+) -> Callable[[Sequence[float | int]], list[float]]:
     """Handle KBinsDiscretizer for single-row input."""
     bin_edges = step.bin_edges_
     n_bins = step.n_bins_
     encode = step.encode
 
-    def transform_one(x: Sequence[Union[float, int]]) -> list[float]:
+    def transform_one(x: Sequence[float | int]) -> list[float]:
         if encode == "onehot":
             result = []
             for i, val in enumerate(x):
@@ -455,12 +455,12 @@ def handle_target_encoder(step: TargetEncoder) -> Callable[[Any], Any]:
 @register_step_handler(FunctionTransformer)
 def handle_function_transformer(
     step: FunctionTransformer,
-) -> Callable[[Sequence[Union[float, int]]], list[Union[float, int]]]:
+) -> Callable[[Sequence[float | int]], list[float | int]]:
     """Handle FunctionTransformer for single-row input."""
     func = step.func
     kw_args = step.kw_args if step.kw_args else {}
 
-    def transform_one(x: Sequence[Union[float, int]]) -> list[Union[float, int]]:
+    def transform_one(x: Sequence[float | int]) -> list[float | int]:
         # Handle passthrough case where func is None
         if func is None:
             # This is a passthrough transformer, just return the input

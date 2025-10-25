@@ -3,7 +3,8 @@ Category encoders transformers handlers for single-row inference.
 These are optional transformers from the category_encoders library.
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import pandas as pd

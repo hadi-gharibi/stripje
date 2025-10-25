@@ -2,7 +2,8 @@
 Registry for step handlers.
 """
 
-from typing import Any, Callable, Optional, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 import numpy as np
 
@@ -27,7 +28,7 @@ def register_step_handler(
     return decorator
 
 
-def get_handler(step_type: type) -> Optional[Callable[..., Any]]:
+def get_handler(step_type: type) -> Callable[..., Any] | None:
     """Get handler for a specific step type."""
     return STEP_HANDLERS.get(step_type)
 

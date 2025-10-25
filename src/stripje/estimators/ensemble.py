@@ -2,8 +2,8 @@
 Ensemble estimators handlers for single-row inference.
 """
 
-from collections.abc import Sequence
-from typing import Any, Callable, Union
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 from sklearn.ensemble import (
@@ -26,12 +26,12 @@ __all__ = [
 @register_step_handler(RandomForestClassifier)
 def handle_random_forest_classifier(
     step: RandomForestClassifier,
-) -> Callable[[Sequence[Union[float, int]]], Any]:
+) -> Callable[[Sequence[float | int]], Any]:
     """Handle RandomForestClassifier for single-row input."""
     estimators = step.estimators_
     classes = step.classes_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> Any:
+    def predict_one(x: Sequence[float | int]) -> Any:
         # Accumulate probabilities across trees (same as sklearn)
         class_probs = np.zeros(len(classes))
 
@@ -62,11 +62,11 @@ def handle_random_forest_classifier(
 @register_step_handler(RandomForestRegressor)
 def handle_random_forest_regressor(
     step: RandomForestRegressor,
-) -> Callable[[Sequence[Union[float, int]]], float]:
+) -> Callable[[Sequence[float | int]], float]:
     """Handle RandomForestRegressor for single-row input."""
     estimators = step.estimators_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> float:
+    def predict_one(x: Sequence[float | int]) -> float:
         predictions = []
         for tree in estimators:
             # Simple tree traversal
@@ -88,14 +88,14 @@ def handle_random_forest_regressor(
 @register_step_handler(GradientBoostingClassifier)
 def handle_gradient_boosting_classifier(
     step: GradientBoostingClassifier,
-) -> Callable[[Sequence[Union[float, int]]], Any]:
+) -> Callable[[Sequence[float | int]], Any]:
     """Handle GradientBoostingClassifier for single-row input."""
     estimators = step.estimators_
     classes = step.classes_
     init_pred = step._raw_predict_init(np.array([[0] * step.n_features_in_]))[0]
     learning_rate = step.learning_rate
 
-    def predict_one(x: Sequence[Union[float, int]]) -> Any:
+    def predict_one(x: Sequence[float | int]) -> Any:
         if len(classes) == 2:
             # Binary classification
             score = init_pred[0]
@@ -132,13 +132,13 @@ def handle_gradient_boosting_classifier(
 @register_step_handler(GradientBoostingRegressor)
 def handle_gradient_boosting_regressor(
     step: GradientBoostingRegressor,
-) -> Callable[[Sequence[Union[float, int]]], float]:
+) -> Callable[[Sequence[float | int]], float]:
     """Handle GradientBoostingRegressor for single-row input."""
     estimators = step.estimators_
     init_pred = step._raw_predict_init(np.array([[0] * step.n_features_in_]))[0]
     learning_rate = step.learning_rate
 
-    def predict_one(x: Sequence[Union[float, int]]) -> float:
+    def predict_one(x: Sequence[float | int]) -> float:
         score = (
             init_pred[0] if hasattr(init_pred, "__len__") else init_pred
         )  # Handle array vs scalar

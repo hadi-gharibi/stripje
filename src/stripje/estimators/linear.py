@@ -2,8 +2,8 @@
 Linear model estimators handlers for single-row inference.
 """
 
-from collections.abc import Sequence
-from typing import Any, Callable, Union
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 from sklearn.linear_model import (
@@ -34,13 +34,13 @@ __all__ = [
 @register_step_handler(LogisticRegression)
 def handle_logistic_regression(
     step: LogisticRegression,
-) -> Callable[[Sequence[Union[float, int]]], Any]:
+) -> Callable[[Sequence[float | int]], Any]:
     """Handle LogisticRegression for single-row input."""
     coef = step.coef_
     intercept = step.intercept_
     classes = step.classes_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> Any:
+    def predict_one(x: Sequence[float | int]) -> Any:
         if len(classes) == 2:
             # Binary classification
             score = sum(coef[0][i] * x[i] for i in range(len(x))) + intercept[0]
@@ -63,24 +63,24 @@ def handle_logistic_regression(
 @register_step_handler(LinearRegression)
 def handle_linear_regression(
     step: LinearRegression,
-) -> Callable[[Sequence[Union[float, int]]], float]:
+) -> Callable[[Sequence[float | int]], float]:
     """Handle LinearRegression for single-row input."""
     coef = step.coef_
     intercept = step.intercept_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> float:
+    def predict_one(x: Sequence[float | int]) -> float:
         return float(sum(coef[i] * x[i] for i in range(len(x))) + intercept)
 
     return predict_one
 
 
 @register_step_handler(Ridge)
-def handle_ridge(step: Ridge) -> Callable[[Sequence[Union[float, int]]], float]:
+def handle_ridge(step: Ridge) -> Callable[[Sequence[float | int]], float]:
     """Handle Ridge for single-row input."""
     coef = step.coef_
     intercept = step.intercept_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> float:
+    def predict_one(x: Sequence[float | int]) -> float:
         return float(sum(coef[i] * x[i] for i in range(len(x))) + intercept)
 
     return predict_one
@@ -89,13 +89,13 @@ def handle_ridge(step: Ridge) -> Callable[[Sequence[Union[float, int]]], float]:
 @register_step_handler(RidgeClassifier)
 def handle_ridge_classifier(
     step: RidgeClassifier,
-) -> Callable[[Sequence[Union[float, int]]], Any]:
+) -> Callable[[Sequence[float | int]], Any]:
     """Handle RidgeClassifier for single-row input."""
     coef = step.coef_
     intercept = step.intercept_
     classes = step.classes_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> Any:
+    def predict_one(x: Sequence[float | int]) -> Any:
         if len(classes) == 2:
             # Binary classification - coef is 1D
             if coef.ndim == 1:
@@ -118,12 +118,12 @@ def handle_ridge_classifier(
 
 
 @register_step_handler(Lasso)
-def handle_lasso(step: Lasso) -> Callable[[Sequence[Union[float, int]]], float]:
+def handle_lasso(step: Lasso) -> Callable[[Sequence[float | int]], float]:
     """Handle Lasso for single-row input."""
     coef = step.coef_
     intercept = step.intercept_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> float:
+    def predict_one(x: Sequence[float | int]) -> float:
         return float(sum(coef[i] * x[i] for i in range(len(x))) + intercept)
 
     return predict_one
@@ -132,12 +132,12 @@ def handle_lasso(step: Lasso) -> Callable[[Sequence[Union[float, int]]], float]:
 @register_step_handler(ElasticNet)
 def handle_elastic_net(
     step: ElasticNet,
-) -> Callable[[Sequence[Union[float, int]]], float]:
+) -> Callable[[Sequence[float | int]], float]:
     """Handle ElasticNet for single-row input."""
     coef = step.coef_
     intercept = step.intercept_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> float:
+    def predict_one(x: Sequence[float | int]) -> float:
         return float(sum(coef[i] * x[i] for i in range(len(x))) + intercept)
 
     return predict_one
@@ -146,13 +146,13 @@ def handle_elastic_net(
 @register_step_handler(SGDClassifier)
 def handle_sgd_classifier(
     step: SGDClassifier,
-) -> Callable[[Sequence[Union[float, int]]], Any]:
+) -> Callable[[Sequence[float | int]], Any]:
     """Handle SGDClassifier for single-row input."""
     coef = step.coef_
     intercept = step.intercept_
     classes = step.classes_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> Any:
+    def predict_one(x: Sequence[float | int]) -> Any:
         if len(classes) == 2:
             score = sum(coef[0][i] * x[i] for i in range(len(x))) + intercept[0]
             return classes[1] if score > 0 else classes[0]
@@ -172,12 +172,12 @@ def handle_sgd_classifier(
 @register_step_handler(SGDRegressor)
 def handle_sgd_regressor(
     step: SGDRegressor,
-) -> Callable[[Sequence[Union[float, int]]], float]:
+) -> Callable[[Sequence[float | int]], float]:
     """Handle SGDRegressor for single-row input."""
     coef = step.coef_
     intercept = step.intercept_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> float:
+    def predict_one(x: Sequence[float | int]) -> float:
         return float(sum(coef[i] * x[i] for i in range(len(x))) + intercept)
 
     return predict_one

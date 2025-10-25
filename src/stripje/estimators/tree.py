@@ -2,8 +2,8 @@
 Tree-based estimators handlers for single-row inference.
 """
 
-from collections.abc import Sequence
-from typing import Any, Callable, Union
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -14,12 +14,12 @@ from ..registry import register_step_handler
 @register_step_handler(DecisionTreeClassifier)
 def handle_decision_tree_classifier(
     step: DecisionTreeClassifier,
-) -> Callable[[Sequence[Union[float, int]]], Any]:
+) -> Callable[[Sequence[float | int]], Any]:
     """Handle DecisionTreeClassifier for single-row input."""
     tree = step.tree_
     classes = step.classes_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> Any:
+    def predict_one(x: Sequence[float | int]) -> Any:
         node = 0
         while tree.children_left[node] != -1:  # Not a leaf
             if x[tree.feature[node]] <= tree.threshold[node]:
@@ -38,11 +38,11 @@ def handle_decision_tree_classifier(
 @register_step_handler(DecisionTreeRegressor)
 def handle_decision_tree_regressor(
     step: DecisionTreeRegressor,
-) -> Callable[[Sequence[Union[float, int]]], float]:
+) -> Callable[[Sequence[float | int]], float]:
     """Handle DecisionTreeRegressor for single-row input."""
     tree = step.tree_
 
-    def predict_one(x: Sequence[Union[float, int]]) -> float:
+    def predict_one(x: Sequence[float | int]) -> float:
         node = 0
         while tree.children_left[node] != -1:  # Not a leaf
             if x[tree.feature[node]] <= tree.threshold[node]:
