@@ -49,4 +49,4 @@ repos:
         language: system
         pass_filenames: false
         always_run: false
-        args: ["run", "--extra", "testing", "pytest"]
+        args: ["run", "--group", "testing", "pytest"]
