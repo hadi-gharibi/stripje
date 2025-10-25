@@ -68,19 +68,21 @@ jobs:
       run: |
         uv run mypy src/stripje --show-error-codes
 
-    - name: Run core tests
+    - name: Run core tests (without category encoders)
+      if: ${{ !matrix.test-category-encoders }}
       run: |
         uv run pytest tests/ -v --tb=short --durations=10 \
           --ignore=tests/test_transformers/test_contrib \
           --cov=stripje --cov-report=xml --cov-report=term-missing
 
-    - name: Run category encoders tests
+    - name: Run all tests (with category encoders)
       if: matrix.test-category-encoders
       run: |
-        uv run pytest tests/test_transformers/test_contrib -v --tb=short
+        uv run pytest tests/ -v --tb=short --durations=10 \
+          --cov=stripje --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov
-      if: matrix.python-version == '3.11' && matrix.sklearn-version == '1.5.2'
+      if: matrix.python-version == '3.11' && matrix.sklearn-version == '1.7.2'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml

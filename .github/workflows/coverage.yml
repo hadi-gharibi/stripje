@@ -22,7 +22,11 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --extra dev
+        uv sync --extra dev --group testing
+
+    - name: Install category encoders
+      run: |
+        uv pip install "category_encoders>=2.0.0"
 
     - name: Run tests with coverage
       run: |
