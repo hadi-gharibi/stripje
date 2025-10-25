@@ -55,7 +55,7 @@ prediction = fast_predict(test_row)  # Much faster than pipeline.predict([test_r
 
 **Stripje compiles your trained pipeline** into a specialized function that:
 - ✅ Extracts fitted parameters once
-- ✅ Eliminates array creation overhead  
+- ✅ Eliminates array creation overhead
 - ✅ Uses native Python operations
 - ✅ Maintains identical results
 
@@ -94,7 +94,7 @@ compiled_time = benchmark_compiled()
 speedup = standard_time / compiled_time
 
 print(f"Standard pipeline: {standard_time:.3f}s")
-print(f"Compiled pipeline: {compiled_time:.3f}s") 
+print(f"Compiled pipeline: {compiled_time:.3f}s")
 print(f"Speedup: {speedup:.1f}x faster!")
 ```
 
@@ -104,10 +104,10 @@ Stripje supports the most commonly used scikit-learn components:
 
 ### 🔄 Transformers
 - **Scalers**: `StandardScaler`, `MinMaxScaler`, `RobustScaler`, `MaxAbsScaler`
-- **Encoders**: `OneHotEncoder`, `OrdinalEncoder`, `LabelEncoder`  
+- **Encoders**: `OneHotEncoder`, `OrdinalEncoder`, `LabelEncoder`
 - **Other**: `Normalizer`, `QuantileTransformer`, `SelectKBest`
 
-### 🎯 Estimators  
+### 🎯 Estimators
 - **Classification**: `LogisticRegression`, `RandomForestClassifier`, `DecisionTreeClassifier`, `GaussianNB`
 - **Regression**: `LinearRegression`
 
@@ -179,7 +179,7 @@ Compiles a fitted scikit-learn pipeline into a fast single-row prediction functi
 **Args:**
 - `pipeline`: A fitted scikit-learn Pipeline
 
-**Returns:**  
+**Returns:**
 - Function that takes a single row (list/array) and returns predictions
 
 **Raises:**
@@ -192,7 +192,7 @@ Returns list of all supported transformer/estimator classes.
 
 Check out the `examples/` directory for:
 - **`simple_example.py`** - Basic usage
-- **`benchmark.py`** - Performance comparisons  
+- **`benchmark.py`** - Performance comparisons
 - **`comprehensive_benchmark.py`** - Detailed benchmarks
 - **`profiler_demo.py`** - Profiling tools
 

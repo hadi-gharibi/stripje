@@ -10,8 +10,8 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from stripje.profiling import PipelineProfiler, ProfileNode, ProfileReport
 import stripje.profiling
+from stripje.profiling import PipelineProfiler, ProfileNode, ProfileReport
 
 
 class SleepTransformer(TransformerMixin, BaseEstimator):
@@ -219,7 +219,7 @@ def test_profile_report_repr_html():
     report = profiler.run(X)
     html = report._repr_html_()
 
-    assert 'stripje-profile-container' in html
+    assert "stripje-profile-container" in html
     assert "sleep_a" in html
     assert "sleep_b" in html
     assert "⏱" in html
@@ -245,7 +245,7 @@ def test_compiled_profiler_with_warmup_and_repetitions():
     # This is a bit of a trick to test the warmup and repetitions
     # on the compiled path, as it doesn't directly support it.
     # We can check the number of events on the nodes.
-    profiler = PipelineProfiler(pipeline, mode="transform", repetitions=1, warmup=0)
+    _profiler = PipelineProfiler(pipeline, mode="transform", repetitions=1, warmup=0)
 
     # manually call it multiple times
     root = ProfileNode(name="compiled_pipeline", kind="callable", method="call")
