@@ -135,7 +135,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --extra dev
+        uv sync --extra dev --group testing
         uv add category_encoders
 
     - name: Run category encoders edge case tests
