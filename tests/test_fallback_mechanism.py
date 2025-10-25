@@ -147,7 +147,6 @@ class TestFallbackMechanism:
         from sklearn.feature_selection import VarianceThreshold
 
         X = np.array([[1, 2, 0], [4, 5, 0], [7, 8, 0], [2, 3, 0]])
-        y = np.array([0, 1, 0, 1])
 
         # VarianceThreshold will remove the zero-variance column
         selector = VarianceThreshold()
