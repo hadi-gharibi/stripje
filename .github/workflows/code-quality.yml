@@ -140,28 +140,4 @@ jobs:
 
     - name: Test basic functionality
       run: |
-        uv run python -c "
-        import stripje
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.pipeline import Pipeline
-        from sklearn.datasets import make_classification
-
-        X, y = make_classification(n_samples=100, n_features=4, random_state=42)
-
-        pipeline = Pipeline([
-            ('scaler', StandardScaler()),
-            ('clf', LogisticRegression(random_state=42))
-        ])
-
-        pipeline.fit(X, y)
-        fast_predict = stripje.compile_pipeline(pipeline)
-
-        # Test prediction
-        test_row = X[0].tolist()
-        original_pred = pipeline.predict([test_row])[0]
-        fast_pred = fast_predict(test_row)
-
-        assert original_pred == fast_pred
-        print(f'Basic functionality test passed on {\"${{ matrix.os }}\"} with Python ${{ matrix.python-version }}')
-        "
+        uv run python tests/integration/test_basic_functionality.py
