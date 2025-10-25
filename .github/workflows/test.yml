@@ -82,7 +82,7 @@ jobs:
 
     - name: Type check with mypy
       run: |
-        uv run mypy src/stripje
+        uv run mypy src/stripje --show-error-codes
 
     - name: Run core tests
       run: |

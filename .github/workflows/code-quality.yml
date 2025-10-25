@@ -37,11 +37,11 @@ jobs:
 
     - name: Lint with ruff (check)
       run: |
-        uv run ruff check src --output-format=github
+        uv run ruff check src tests
 
     - name: Check formatting with ruff
       run: |
-        uv run ruff format --check src
+        uv run ruff format --check src tests
 
     - name: Type check with mypy
       run: |
@@ -69,8 +69,8 @@ jobs:
 
     - name: Run bandit security linter
       run: |
-        uv run bandit -r src/ -f json -o bandit-report.json
-        uv run bandit -r src/ # Also show human readable output
+        uv run bandit -r src/ -c pyproject.toml -f json -o bandit-report.json
+        uv run bandit -r src/ -c pyproject.toml # Also show human readable output
 
     - name: Check dependencies for security vulnerabilities
       run: |

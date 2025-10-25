@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         stages: [pre-push]
@@ -23,35 +23,36 @@ repos:
         stages: [pre-push]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.4
+    rev: v0.14.2
     hooks:
-      # Run the linter
+      # Run the linter - matches GitHub Actions
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
-        exclude: ^examples/
+        args: [check]
+        files: ^(src|tests)/
         stages: [pre-push]
-      # Run the formatter
+      # Run the formatter - matches GitHub Actions
       - id: ruff-format
-        exclude: ^examples/
+        args: [--check]
+        files: ^(src|tests)/
         stages: [pre-push]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
+    rev: v1.18.2
     hooks:
       - id: mypy
         additional_dependencies:
           - types-requests
-        args: [--strict, --ignore-missing-imports]
-        files: ^src/
+        args: [--show-error-codes]
+        files: ^src/stripje/
         stages: [pre-push]
 
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.5
+    rev: 1.8.6
     hooks:
       - id: bandit
-        args: [-c, pyproject.toml]
+        args: [-r, src/, -c, pyproject.toml]
         additional_dependencies: ["bandit[toml]", "pbr"]
-        exclude: ^tests/
+        files: ^src/
         stages: [pre-push]
 
   - repo: local
