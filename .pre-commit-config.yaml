@@ -65,6 +65,6 @@ repos:
         entry: uv
         language: system
         pass_filenames: false
-        always_run: false
+        always_run: true
         stages: [pre-push]
         args: ["run", "--group", "testing", "pytest"]
