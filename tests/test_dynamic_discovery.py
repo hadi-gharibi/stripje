@@ -18,7 +18,9 @@ class TestDynamicDiscovery:
         supported = get_supported_transformers()
 
         # Should have many handlers registered
-        assert len(supported) > 50, "Expected more than 50 handlers to be auto-discovered"
+        assert len(supported) > 50, (
+            "Expected more than 50 handlers to be auto-discovered"
+        )
 
         # Check some expected handlers from different modules
         assert StandardScaler in supported, "StandardScaler should be auto-discovered"
@@ -87,7 +89,6 @@ class TestExternalRegistration:
 
     def test_custom_handler_works_in_pipeline(self):
         """Test that a custom registered handler works in a compiled pipeline."""
-        import numpy as np
         from sklearn.datasets import make_classification
         from sklearn.linear_model import LogisticRegression
         from sklearn.pipeline import Pipeline
@@ -174,7 +175,6 @@ class TestExternalRegistration:
 
     def test_custom_handler_with_parameters(self):
         """Test that custom handlers can access transformer parameters."""
-        import numpy as np
         from sklearn.datasets import make_classification
         from sklearn.linear_model import LogisticRegression
         from sklearn.pipeline import Pipeline

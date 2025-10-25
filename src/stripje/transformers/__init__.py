@@ -17,6 +17,7 @@ for module_info in pkgutil.iter_modules([str(_current_dir)]):
 # Import contrib modules (optional dependencies)
 try:
     from . import contrib
+
     contrib_all = contrib.__all__ if hasattr(contrib, "__all__") else []
 except ImportError:
     contrib_all = []
