@@ -1,10 +1,11 @@
 name: Tests
 
 on:
+  # Run on all pushes to any branch (catches feature branches)
   push:
-    branches: [ main, develop ]
+  # Run on all pull requests targeting main
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
   test:

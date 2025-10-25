@@ -1,8 +1,9 @@
 name: Coverage
 
 on:
+  # Run on all pull requests targeting main
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
   coverage:

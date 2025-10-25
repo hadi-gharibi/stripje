@@ -1,10 +1,11 @@
 name: Category Encoders Compatibility
 
 on:
+  # Run on all pushes to any branch (catches feature branches)
   push:
-    branches: [ main, develop ]
+  # Run on all pull requests targeting main
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
   schedule:
     # Run weekly on Sundays at 2 AM UTC
     - cron: '0 2 * * 0'
