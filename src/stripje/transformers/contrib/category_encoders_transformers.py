@@ -69,7 +69,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
                     # Default to using integer indices as column names
                     x_dict = dict(enumerate(x))
             else:
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
 
             result = []
 
@@ -125,7 +125,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
                 else:
                     x_dict = dict(enumerate(x))
             else:
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
 
             result = []
 
@@ -180,7 +180,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
                 else:
                     x_dict = dict(enumerate(x))
             else:
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
 
             result = []
             for col_mapping in mapping:
@@ -217,7 +217,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
                 else:
                     x_dict = dict(enumerate(x))
             else:
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
 
             result = [0.0] * step.n_components
 
@@ -255,7 +255,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
                 else:
                     x_dict = dict(enumerate(x))
             else:
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
 
             result = []
 
@@ -319,7 +319,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
                 else:
                     x_dict = dict(enumerate(x))
             else:
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
 
             result = []
 
@@ -365,7 +365,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
                 else:
                     x_dict = dict(enumerate(x))
             else:
-                x_dict = x  # type: ignore[unreachable]
+                x_dict = x
 
             result = []
 
