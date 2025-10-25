@@ -22,22 +22,22 @@ jobs:
           - name: "latest-stable"
             category-encoders-version: "latest"
             sklearn-version: "latest"
-          
+
           # Test 2.7.x series (last version before sklearn 1.6.0 requirement)
           - name: "ce-2.7-sklearn-1.5"
             category-encoders-version: "2.7.0"
             sklearn-version: "1.5.2"
-          
+
           # Test 2.8.x series with sklearn 1.6.x (minimum for 2.8+)
           - name: "ce-2.8-sklearn-1.6"
             category-encoders-version: "2.8.0"
             sklearn-version: "1.6.0"
-          
+
           # Test older 2.6.x with sklearn 1.0.x
           - name: "ce-2.6-sklearn-1.0"
             category-encoders-version: "2.6.3"
             sklearn-version: "1.0.2"
-          
+
         include:
           # Test development version on latest Python only
           - python-version: "3.12"
@@ -45,7 +45,7 @@ jobs:
               name: "dev-version"
               category-encoders-version: "git+https://github.com/scikit-learn-contrib/category_encoders.git"
               sklearn-version: "latest"
-        
+
         exclude:
           # Python 3.12 may have compatibility issues with older versions
           - python-version: "3.12"

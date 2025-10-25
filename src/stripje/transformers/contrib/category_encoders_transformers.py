@@ -58,7 +58,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
         """Handle BinaryEncoder for single-row input."""
         # Get the mapping information
         mapping = step.mapping
-        
+
         # Get list of columns that are encoded
         encoded_cols = [col_mapping["col"] for col_mapping in mapping]
 
@@ -218,7 +218,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
     def handle_hashing_encoder(step: Any) -> Callable[[Any], Any]:
         """Handle HashingEncoder for single-row input."""
         import hashlib
-        
+
         # Get list of columns to hash
         cols_to_hash = step.cols if hasattr(step, "cols") and step.cols else None
 
@@ -235,9 +235,7 @@ if CATEGORY_ENCODERS_AVAILABLE:
 
             # Hash each categorical column
             cols_to_process = (
-                cols_to_hash
-                if cols_to_hash is not None
-                else list(x_dict.keys())
+                cols_to_hash if cols_to_hash is not None else list(x_dict.keys())
             )
 
             for col in cols_to_process:
