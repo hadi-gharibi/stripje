@@ -1,0 +1,209 @@
+/*
+This CSS is adapted from scikit-learn's HTML display functionality.
+It is used to style the Stripje profiler's HTML report to be visually
+consistent with scikit-learn's pipeline diagrams.
+*/
+
+.stripje-profile-container {
+    /* Color scheme matching sklearn */
+    --sklearn-color-text: black;
+    --sklearn-color-line: #e0e0e0;
+    --sklearn-color-fitted-level-0: #f0f8ff;
+    --sklearn-color-fitted-level-1: #d4ebff;
+    --sklearn-color-fitted-level-2: #b3dbfd;
+    --sklearn-color-fitted-level-3: cornflowerblue;
+
+    /* Stripje timing colors */
+    --stripje-timing-fast: #e8f5e9;
+    --stripje-timing-normal: #e3f2fd;
+    --stripje-timing-slow: #fff3e0;
+    --stripje-timing-very-slow: #ffebee;
+
+    color: var(--sklearn-color-text);
+    background-color: white;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.stripje-profile-container .sk-top-container {
+    position: relative;
+}
+
+.stripje-profile-container .sk-container {
+    display: inline-block !important;
+    position: relative !important;
+}
+
+.stripje-profile-container .sk-text-repr-fallback {
+    display: none;
+}
+
+.stripje-profile-container .sk-item {
+    position: relative;
+    background-color: var(--sklearn-color-fitted-level-0);
+}
+
+.stripje-profile-container .sk-dashed-wrapped {
+    border: 2px dashed var(--sklearn-color-line);
+    margin: 0 0.4em 0.5em 0.4em;
+    box-sizing: border-box;
+    padding-bottom: 0.4em;
+    background-color: var(--sklearn-color-fitted-level-0);
+}
+
+.stripje-profile-container .sk-label-container {
+    text-align: center;
+    padding: 0.4em 0.4em 0 0.4em;
+}
+
+.stripje-profile-container .sk-label {
+    background-color: var(--sklearn-color-fitted-level-2);
+    padding: 0.2em 0.4em;
+    border-radius: 0.2em;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    min-width: fit-content;
+}
+
+.stripje-profile-container .sk-label-text {
+    display: inline;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.stripje-profile-container .sk-serial {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--sklearn-color-fitted-level-0);
+    position: relative;
+}
+
+.stripje-profile-container .sk-serial::before {
+    content: "";
+    position: absolute;
+    border-left: 1px solid gray;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+}
+
+.stripje-profile-container .sk-serial > .sk-item {
+    width: 90%;
+    margin: 0.25em;
+    position: relative;
+    z-index: 1;
+}
+
+.stripje-profile-container .sk-parallel {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    background-color: var(--sklearn-color-fitted-level-0);
+    position: relative;
+}
+
+.stripje-profile-container .sk-parallel::before {
+    content: "";
+    position: absolute;
+    border-left: 1px solid gray;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+}
+
+.stripje-profile-container .sk-parallel-item {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    position: relative;
+    background-color: var(--sklearn-color-fitted-level-1);
+}
+
+.stripje-profile-container .sk-parallel-item::after {
+    content: "";
+    width: 100%;
+    border-bottom: 1px solid gray;
+    flex-grow: 1;
+}
+
+.stripje-profile-container .sk-parallel-item:first-child::after {
+    align-self: flex-end;
+    width: 50%;
+}
+
+.stripje-profile-container .sk-parallel-item:last-child::after {
+    align-self: flex-start;
+    width: 50%;
+}
+
+.stripje-profile-container .sk-parallel-item:only-child::after {
+    width: 0;
+}
+
+.stripje-profile-container .sk-estimator {
+    background-color: var(--sklearn-color-fitted-level-2);
+    border: 1px solid var(--sklearn-color-line);
+    border-radius: 0.25em;
+    box-sizing: border-box;
+    margin: 0.25em;
+    padding: 0.5em;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.stripje-profile-container .sk-estimator-name {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    width: 100%;
+}
+
+.stripje-profile-container .sk-estimator-name > span {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.stripje-profile-container .stripje-timing-badge {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-left: auto;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.stripje-profile-container .timing-fast {
+    background-color: var(--stripje-timing-fast);
+    color: #2e7d32;
+}
+
+.stripje-profile-container .timing-normal {
+    background-color: var(--stripje-timing-normal);
+    color: #1565c0;
+}
+
+.stripje-profile-container .timing-slow {
+    background-color: var(--stripje-timing-slow);
+    color: #ef6c00;
+}
+
+.stripje-profile-container .timing-very-slow {
+    background-color: var(--stripje-timing-very-slow);
+    color: #c62828;
+}
+
+.stripje-profile-container .sk-metadata {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 0.3em;
+}

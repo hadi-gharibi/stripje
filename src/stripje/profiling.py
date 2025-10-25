@@ -130,6 +130,204 @@ class ProfileReport:
 
         return build(self.root)
 
+    def _repr_html_(self) -> str:
+        """Return HTML representation for Jupyter notebook display."""
+        import uuid
+        from pathlib import Path
+        container_id = f"stripje-container-{uuid.uuid4().hex[:8]}"
+        
+        # Load CSS from external file
+        css_path = Path(__file__).parent / "profiling_style.css"
+        try:
+            with open(css_path, "r") as f:
+                style = f.read()
+        except FileNotFoundError:
+            style = "/* CSS file not found */"
+
+        # Replace placeholder class in CSS
+        style = style.replace(".stripje-profile-container", f".{container_id}")
+
+        html_parts = [f"<style>{style}</style>"]
+        html_parts.append(f'<div class="{container_id} stripje-profile-container sk-top-container">')
+        
+        # Fallback text (hidden by CSS)
+        html_parts.append('<div class="sk-text-repr-fallback">')
+        html_parts.append(f'<pre>Pipeline Profile: {self._escape_html(self.root.name)}</pre>')
+        html_parts.append('</div>')
+        
+        # Main container
+        estimator_id_counter = {"count": 0}
+        html_parts.append('<div class="sk-container">')
+        html_parts.append(self._render_pipeline_wrapper(self.root, estimator_id_counter))
+        html_parts.append('</div>')
+        html_parts.append('</div>')
+        
+        return '\n'.join(html_parts)
+
+    def _render_pipeline_wrapper(self, node: ProfileNode, estimator_id_counter: dict) -> str:
+        """Render the main pipeline wrapper with dashed border."""
+        html = ['<div class="sk-item sk-dashed-wrapped">']
+        
+        # Pipeline label
+        html.append('<div class="sk-label-container">')
+        timing_badge = self._get_timing_badge(node.mean_duration, node.mean_duration_display)
+        html.append(f'<div class="sk-label">')
+        html.append(f'<span class="sk-label-text">{self._escape_html(node.name)}</span>')
+        html.append(timing_badge)
+        html.append('</div>')
+        html.append('</div>')
+        
+        # Pipeline steps
+        if node.children:
+            html.append('<div class="sk-serial">')
+            for child in node.children:
+                html.append(self._render_node(child, estimator_id_counter))
+            html.append('</div>')
+        
+        html.append('</div>')
+        return '\n'.join(html)
+
+    def _render_node(self, node: ProfileNode, estimator_id_counter: dict) -> str:
+        """Render a single node (estimator or nested structure)."""
+        
+        # Check if this is a ColumnTransformer (parallel layout)
+        if node.kind == "ColumnTransformer":
+            return self._render_column_transformer(node, estimator_id_counter)
+        
+        # Check if this is a nested Pipeline
+        if node.kind == "Pipeline" and node.children:
+            return self._render_nested_pipeline(node, estimator_id_counter)
+        
+        # Regular estimator
+        return self._render_estimator(node, estimator_id_counter)
+
+    def _render_column_transformer(self, node: ProfileNode, estimator_id_counter: dict) -> str:
+        """Render ColumnTransformer with parallel layout."""
+        html = ['<div class="sk-item">']
+        
+        # Label
+        html.append('<div class="sk-label-container">')
+        timing_badge = self._get_timing_badge(node.mean_duration, node.mean_duration_display)
+        html.append(f'<div class="sk-label">')
+        html.append(f'<span class="sk-label-text">{self._escape_html(node.name)}</span>')
+        html.append(timing_badge)
+        html.append('</div>')
+        html.append('</div>')
+        
+        # Parallel items
+        if node.children:
+            html.append('<div class="sk-parallel">')
+            for child in node.children:
+                html.append('<div class="sk-parallel-item">')
+                html.append(self._render_parallel_branch(child, estimator_id_counter))
+                html.append('</div>')
+            html.append('</div>')
+        
+        html.append('</div>')
+        return '\n'.join(html)
+
+    def _render_parallel_branch(self, node: ProfileNode, estimator_id_counter: dict) -> str:
+        """Render a single branch in a parallel layout (e.g., one transformer in ColumnTransformer)."""
+        # Check if this branch itself is a Pipeline
+        if node.kind == "Pipeline" and node.children:
+            # This branch is a nested pipeline, render it with dashed border
+            return self._render_nested_pipeline(node, estimator_id_counter)
+        
+        html = ['<div class="sk-item">']
+        
+        # Branch label
+        html.append('<div class="sk-label-container">')
+        timing_badge = self._get_timing_badge(node.mean_duration, node.mean_duration_display)
+        html.append(f'<div class="sk-label">')
+        html.append(f'<span class="sk-label-text">{self._escape_html(node.name)}</span>')
+        html.append(timing_badge)
+        html.append('</div>')
+        html.append('</div>')
+        
+        # If this branch has nested steps (e.g., a Pipeline)
+        if node.children:
+            html.append('<div class="sk-serial">')
+            for child in node.children:
+                # Recursively handle nested structures properly
+                if child.kind == "Pipeline" and child.children:
+                    # Nested pipeline - render with dashed border
+                    html.append(self._render_nested_pipeline(child, estimator_id_counter))
+                elif child.kind == "ColumnTransformer":
+                    # Nested ColumnTransformer - render it
+                    html.append(self._render_column_transformer(child, estimator_id_counter))
+                else:
+                    # Regular estimator
+                    html.append(self._render_estimator(child, estimator_id_counter))
+            html.append('</div>')
+        
+        html.append('</div>')
+        return '\n'.join(html)
+
+    def _render_nested_pipeline(self, node: ProfileNode, estimator_id_counter: dict) -> str:
+        """Render a nested Pipeline."""
+        html = ['<div class="sk-item sk-dashed-wrapped">']
+        
+        # Label
+        html.append('<div class="sk-label-container">')
+        timing_badge = self._get_timing_badge(node.mean_duration, node.mean_duration_display)
+        html.append(f'<div class="sk-label">')
+        html.append(f'<span class="sk-label-text">{self._escape_html(node.name)}</span>')
+        html.append(timing_badge)
+        html.append('</div>')
+        html.append('</div>')
+        
+        # Steps
+        if node.children:
+            html.append('<div class="sk-serial">')
+            for child in node.children:
+                html.append(self._render_node(child, estimator_id_counter))
+            html.append('</div>')
+        
+        html.append('</div>')
+        return '\n'.join(html)
+
+    def _render_estimator(self, node: ProfileNode, estimator_id_counter: dict) -> str:
+        """Render a leaf estimator/transformer."""
+        estimator_id_counter["count"] += 1
+        
+        html = ['<div class="sk-item">']
+        html.append('<div class="sk-estimator">')
+        
+        timing_badge = self._get_timing_badge(node.mean_duration, node.mean_duration_display)
+        html.append('<div class="sk-estimator-name">')
+        html.append(f'<span>{self._escape_html(node.kind)}</span>')
+        html.append(timing_badge)
+        html.append('</div>')
+        
+        html.append('</div>')
+        html.append('</div>')
+        return '\n'.join(html)
+    
+    def _get_timing_badge(self, duration: float, display: str) -> str:
+        """Get timing badge HTML with appropriate color."""
+        if duration < 0.001:  # < 1ms
+            css_class = "timing-fast"
+        elif duration < 0.01:  # < 10ms
+            css_class = "timing-normal"
+        elif duration < 0.1:  # < 100ms
+            css_class = "timing-slow"
+        else:
+            css_class = "timing-very-slow"
+        
+        return f'<span class="stripje-timing-badge {css_class}">⏱ {display}</span>'
+    
+    @staticmethod
+    def _escape_html(text: str) -> str:
+        """Escape HTML special characters."""
+        return (
+            str(text)
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+            .replace("'", "&#39;")
+        )
+
 
 class MethodTimer:
     """Context manager that patches an object's method to collect timing events."""
@@ -345,15 +543,22 @@ class PipelineComponentProfiler(ComponentProfiler):
         y: Any = None,
     ) -> Any:
         node = parent.child(name, type(component).__name__, method)
-        return self.batch_strategy._profile_steps(component.steps, data, node, method, y)
+        start = perf_counter_ns()
+        result = self.batch_strategy._profile_steps(component.steps, data, node, method, y)
+        end = perf_counter_ns()
+        node.add_event(start, end)
+        return result
 
     def profile_compiled(
         self, component: Pipeline, name: str, data: Any, parent: ProfileNode
     ) -> Any:
         node = parent.child(name, type(component).__name__, "call")
+        start = perf_counter_ns()
         current = data
         for sub_name, sub_step in component.steps:
             current = self.compiled_strategy._profile_step(sub_step, sub_name, current, node)
+        end = perf_counter_ns()
+        node.add_event(start, end)
         return current
 
 
@@ -488,6 +693,7 @@ class CompiledColumnTransformerProfiler(ComponentProfiler):
     ) -> Any:
         node = parent.child(name, type(transformer).__name__, "call")
 
+        start = perf_counter_ns()
         data_df = self.data_handler.prepare(data)
         results = []
 
@@ -496,7 +702,11 @@ class CompiledColumnTransformerProfiler(ComponentProfiler):
             if result is not None:
                 results.append(result)
 
-        return self._combine_results(results, data)
+        combined = self._combine_results(results, data)
+        end = perf_counter_ns()
+        node.add_event(start, end)
+
+        return combined
 
     def _profile_sub_transformer(
         self, name: str, trans: Any, columns: Any, data_df: Any, parent: ProfileNode
