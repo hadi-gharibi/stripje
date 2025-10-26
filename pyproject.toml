@@ -154,6 +154,7 @@ skips = ["B101", "B601"]  # Skip assert_used and shell_injection_subprocess
 # Coverage configuration
 [tool.coverage.run]
 source = ["src/stripje"]
+relative_files = true
 omit = [
     "*/tests/*",
     "*/test_*",
