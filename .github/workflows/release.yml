@@ -33,7 +33,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --extra dev
+        uv sync --extra dev --group testing
         uv pip install scikit-learn==${{ matrix.sklearn-version }}
 
     - name: Run tests
