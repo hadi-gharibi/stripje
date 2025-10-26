@@ -81,8 +81,13 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git add src/stripje/__version__.py
-        git commit -m "chore: bump version to ${{ github.event.inputs.version }}"
-        git push
+        # Only commit if there are changes
+        if git diff --staged --quiet; then
+          echo "No version changes to commit"
+        else
+          git commit -m "chore: bump version to ${{ github.event.inputs.version }}"
+          git push
+        fi
 
     - name: Build package
       run: |
