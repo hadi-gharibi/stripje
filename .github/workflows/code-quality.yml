@@ -66,6 +66,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        uv sync
         uv add 'bandit[toml]' safety
 
     - name: Run bandit security linter

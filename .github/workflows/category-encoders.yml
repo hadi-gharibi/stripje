@@ -63,6 +63,10 @@ jobs:
       with:
         enable-cache: false
 
+    - name: Create virtual environment
+      run: |
+        uv venv
+
     - name: Cache uv dependencies
       uses: actions/cache@v4
       with:

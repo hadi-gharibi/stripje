@@ -49,11 +49,8 @@ jobs:
 
     - name: Install scikit-learn ${{ matrix.sklearn-version }}
       run: |
-        uv pip install scikit-learn==${{ matrix.sklearn-version }}
-
-    - name: Install package dependencies
-      run: |
         uv sync --extra dev --group testing
+        uv pip install scikit-learn==${{ matrix.sklearn-version }}
 
     - name: Install category encoders (if testing)
       if: matrix.test-category-encoders
