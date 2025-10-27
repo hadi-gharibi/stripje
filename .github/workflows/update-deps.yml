@@ -37,7 +37,7 @@ jobs:
         uv run pytest tests/test_fast_pipeline.py tests/test_integration.py -v
 
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v5
+      uses: peter-evans/create-pull-request@v7
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         commit-message: "deps: update dependencies"
