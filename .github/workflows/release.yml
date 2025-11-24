@@ -19,7 +19,7 @@ jobs:
         sklearn-version: ["1.5.2", "1.6.0", "1.6.1", "1.7.0", "1.7.2"]
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
@@ -46,7 +46,7 @@ jobs:
     permissions:
       contents: write  # Allow pushing version commit
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -156,7 +156,7 @@ jobs:
       id-token: write
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Download all the dists
       uses: actions/download-artifact@v4
